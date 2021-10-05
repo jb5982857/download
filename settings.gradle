@@ -1,2 +1,3 @@
 rootProject.name = "udownload"
 include ':app'
+include ':udownload'

@@ -1,7 +1,9 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 buildscript {
-    ext.kotlin_version = "1.4.31"
+    ext.kotlin_version = "1.5.10"
     repositories {
+        maven { url 'http://dev-maven.dhgames.com:8081/artifactory/dh/' }
+        maven { url 'http://maven.dhgames.com:8081/artifactory/dh/' }
         google()
         mavenCentral()
     }
@@ -16,9 +18,10 @@ buildscript {
 
 allprojects {
     repositories {
+        maven { url 'http://dev-maven.dhgames.com:8081/artifactory/dh/' }
+        maven { url 'http://maven.dhgames.com:8081/artifactory/dh/' }
         google()
         mavenCentral()
-        jcenter() // Warning: this repository is going to shut down soon
     }
 }
 
