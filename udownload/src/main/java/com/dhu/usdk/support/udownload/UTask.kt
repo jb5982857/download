@@ -1,7 +1,9 @@
 package com.dhu.usdk.support.udownload
 
+import android.content.Context
+import com.dhu.usdk.support.udownload.support.queue.SuccessTasks
 import com.dhu.usdk.support.udownload.utils.ULog
-import java.io.Serializable
+import java.util.concurrent.ConcurrentLinkedQueue
 
 @Volatile
 var taskIndex = 0
@@ -11,9 +13,10 @@ class UTask(
     val name: String = taskIndex++.toString()
 ) {
     private var isStart = false
-    private val downloadQueue = ArrayList<Item>()
-    private val successTasks = ArrayList<Item>()
-    private val failedTasks = ArrayList<Item>()
+    val downloadQueue = ConcurrentLinkedQueue<Item>()
+    val pendingQueue = ConcurrentLinkedQueue<Item>()
+    val successTasks = SuccessTasks()
+    val failedTasks = ConcurrentLinkedQueue<Item>()
 
     /**
      * 下载进度
@@ -59,35 +62,35 @@ class UTask(
                 "item $item has the same path as $existItem,but the url is not the same ,it will error occur".apply {
                     ULog.e(this)
                 }
-                downloadQueue.add(item)
             }
-            return this
         }
         downloadQueue.add(item)
         return this
     }
 
-    fun start() {
+    fun start(context: Context) {
         if (isStart) {
             "the task $name is started".apply {
                 ULog.w(this)
             }
             return
         }
+        ULog.i("开始下载，文件数 ${downloadQueue.size}")
 
         downloadStateChangeListener(State.READY)
+        UDownloadService.add(context, this)
         isStart = true
     }
 
-    fun restart() {
+    fun restart(context: Context) {
 
     }
 
-    fun pause() {
+    fun pause(context: Context) {
 
     }
 
-    fun stop() {
+    fun stop(context: Context) {
 
     }
 }
@@ -110,12 +113,14 @@ data class Item(
     val path: String,
     val md5: String,
     val size: Long,
-    val state: State,
     val isRetry: Boolean = true
 ) {
     //重复的 item ，必须是 url 和 path 相同
     val duplicateItem = ArrayList<Item>()
+
+    //该条下载的状态
+    var state = State.READY
     override fun toString(): String {
-        return "Item(url='$url', path='$path', md5='$md5', size=$size, state=$state, isRetry=$isRetry)"
+        return "Item(url='$url', path='$path', md5='$md5', size=$size, isRetry=$isRetry)"
     }
 }

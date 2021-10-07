@@ -1,5 +1,6 @@
 package com.dhu.usdk.support.udownload.support.io
 
+import com.dhu.usdk.support.udownload.utils.ULog
 import com.dhu.usdk.support.udownload.utils.md5
 import com.dhu.usdk.support.udownload.utils.moveData
 import kotlinx.coroutines.Dispatchers
@@ -9,6 +10,16 @@ import java.io.FileInputStream
 import java.io.InputStream
 
 abstract class AbIoManager {
+    //是否完成到本地的写入
+    var isWriteFinish = false
+
+    //新下载且写入的长度
+    var writeLen = 0L
+        set(value) {
+            field = value
+            ULog.d("the all len is $writeLen")
+        }
+
     companion object {
         const val TEMP = ".temp"
     }
@@ -28,26 +39,40 @@ abstract class AbIoManager {
         }
     }
 
-    suspend fun mv2TargetFile(filePath: String): Boolean {
-        return withContext(Dispatchers.IO) {
-            return@withContext moveData(File(getTempPath(filePath)), File(filePath))
-        }
+    fun mv2TargetFile(filePath: String): Boolean {
+        return moveData(File(getTempPath(filePath)), File(filePath))
     }
 
-    suspend fun getTempFileSize(filePath: String): Long {
-        return withContext(Dispatchers.IO) {
-            val file = File(filePath)
-            if (file.exists()) {
-                return@withContext file.length()
-            } else {
-                return@withContext 0L
+    fun writeFile(filePath: String, inputStream: InputStream): Boolean {
+        createTempFileIfNeed(filePath)
+        if (!saveFile(getTempPath(filePath), inputStream)) {
+            return false
+        }
+        isWriteFinish = true
+        return mv2TargetFile(filePath)
+    }
+
+    private fun createTempFileIfNeed(filePath: String) {
+        File(filePath).apply {
+            if (!exists()) {
+                parentFile?.mkdirs()
+                createNewFile()
             }
         }
     }
 
-    abstract fun saveFile(filePath: String, inputStream: InputStream)
+    fun getTempFileSize(filePath: String): Long {
+        val file = File(getTempPath(filePath))
+        return if (file.exists()) {
+            file.length()
+        } else {
+            0L
+        }
+    }
 
-    private fun getTempPath(filePath: String): String {
+    abstract fun saveFile(filePath: String, inputStream: InputStream): Boolean
+
+    protected fun getTempPath(filePath: String): String {
         return filePath + TEMP
     }
 }

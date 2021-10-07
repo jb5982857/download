@@ -1,53 +1,50 @@
 package com.dhu.usdk.support.udownload.utils
 
 import android.os.Build
-import android.os.FileUtils
 import java.io.File
 import java.io.FileInputStream
+import java.io.FileNotFoundException
 import java.io.IOException
+import java.math.BigInteger
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.security.MessageDigest
-import kotlin.experimental.and
+import java.security.NoSuchAlgorithmException
 
 
-fun File.md5(): String? {
-    if (!this.isFile) {
-        return null
-    }
-    var digest: MessageDigest? = null
-    var `in`: FileInputStream? = null
-    val buffer = ByteArray(1024)
-    var len: Int
+fun File.md5(): String {
+    var result = ""
+    var fis: FileInputStream? = null
+    val buffer = ByteArray(8192)
+    var length: Int
+    val md: MessageDigest
+    val algorithm = "MD5"
     try {
-        digest = MessageDigest.getInstance("MD5")
-        `in` = FileInputStream(this)
-        while (`in`.read(buffer, 0, 1024).also { len = it } != -1) {
-            digest.update(buffer, 0, len)
+        md = MessageDigest.getInstance(algorithm)
+        fis = FileInputStream(this)
+        while (true) {
+            length = fis.read(buffer)
+            if (length == -1) {
+                break
+            } else {
+                md.update(buffer, 0, length)
+            }
         }
-        `in`.close()
-    } catch (e: Exception) {
-        e.printStackTrace()
-        return null
-    }
-    return bytesToHexString(digest.digest())
-}
+        //digest() 只能调用一次~~~ 相关数据会被重置成初始状态
+        result = BigInteger(1, md.digest()).toString(16)
+    } catch (e: NoSuchAlgorithmException) {
 
-fun bytesToHexString(src: ByteArray?): String? {
-    val stringBuilder = StringBuilder("")
-    if (src == null || src.isEmpty()) {
-        return null
-    }
-    for (i in src.indices) {
-        val v = (src[i] and 0xFF.toByte()).toInt()
-        val hv = Integer.toHexString(v)
-        if (hv.length < 2) {
-            stringBuilder.append(0)
+    } catch (e: FileNotFoundException) {
+
+    } finally {
+        try {
+            fis?.close()
+        } catch (e: IOException) {
+
         }
-        stringBuilder.append(hv)
     }
-    return stringBuilder.toString()
+    return result
 }
 
 fun moveData(source: File, target: File): Boolean {

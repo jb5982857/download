@@ -7,9 +7,9 @@ import android.util.Log
  * 日志工具
  */
 object ULog {
-    var tag: String? = null
+    var tag: String = "UDownload"
     var allowV = false
-    var allowD = false
+    var allowD = true
     var allowI = true
     var allowW = true
     var allowE = true
