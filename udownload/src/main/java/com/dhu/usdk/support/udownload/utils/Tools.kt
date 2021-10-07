@@ -2,7 +2,7 @@ package com.dhu.usdk.support.udownload.utils
 
 import java.text.DecimalFormat
 
-var decimalFormat = DecimalFormat("0000.00")
+var decimalFormat = DecimalFormat("#.##")
 
 /**
  * size -> 单位 byte

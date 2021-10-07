@@ -14,37 +14,7 @@ import java.security.NoSuchAlgorithmException
 
 
 fun File.md5(): String {
-    var result = ""
-    var fis: FileInputStream? = null
-    val buffer = ByteArray(8192)
-    var length: Int
-    val md: MessageDigest
-    val algorithm = "MD5"
-    try {
-        md = MessageDigest.getInstance(algorithm)
-        fis = FileInputStream(this)
-        while (true) {
-            length = fis.read(buffer)
-            if (length == -1) {
-                break
-            } else {
-                md.update(buffer, 0, length)
-            }
-        }
-        //digest() 只能调用一次~~~ 相关数据会被重置成初始状态
-        result = BigInteger(1, md.digest()).toString(16)
-    } catch (e: NoSuchAlgorithmException) {
-
-    } catch (e: FileNotFoundException) {
-
-    } finally {
-        try {
-            fis?.close()
-        } catch (e: IOException) {
-
-        }
-    }
-    return result
+    return MD5Util.getFileMD5(this)
 }
 
 fun moveData(source: File, target: File): Boolean {

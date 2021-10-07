@@ -4,6 +4,7 @@ import com.dh.usdk.support.uokhttp.OkHttpClient
 import com.dh.usdk.support.uokhttp.Request
 import com.dh.usdk.support.uokhttp.loginterceptor.HttpLoggingInterceptor
 import com.dhu.usdk.support.udownload.utils.ULog
+import java.io.BufferedInputStream
 import java.io.InputStream
 
 class OkhttpFactory : IHttpDownload {
@@ -11,7 +12,7 @@ class OkhttpFactory : IHttpDownload {
     private val httpLogger by lazy {
         HttpLoggingInterceptor {
             ULog.i("http-info -> $it")
-        }.setLevel(HttpLoggingInterceptor.Level.BODY)
+        }.setLevel(HttpLoggingInterceptor.Level.HEADERS)
     }
 
     override fun download(url: String, start: Long): InputStream? {
@@ -19,10 +20,16 @@ class OkhttpFactory : IHttpDownload {
             .addHeader("Range", "bytes=$start-")
             .url(url)
             .build()
-        return try {
-            okHttpClient.newCall(request).execute().body()?.byteStream()
+        try {
+            okHttpClient.newCall(request).execute().body()?.byteStream().apply {
+                return if (this == null) {
+                    null
+                } else {
+                    BufferedInputStream(this)
+                }
+            }
         } catch (e: Exception) {
-            null
+            return null
         }
     }
 }

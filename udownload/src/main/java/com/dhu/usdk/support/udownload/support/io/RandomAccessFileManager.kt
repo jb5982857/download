@@ -21,8 +21,10 @@ class RandomAccessFileManager : AbIoManager() {
             }
         } catch (e: FileNotFoundException) {
             e.printStackTrace()
+            return false
         } catch (e: IOException) {
             e.printStackTrace()
+            return false
         } finally {
             try {
                 raf?.close()

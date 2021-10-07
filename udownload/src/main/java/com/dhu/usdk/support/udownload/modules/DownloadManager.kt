@@ -40,14 +40,20 @@ class DownloadManager private constructor() {
 
         coroutineScope.launch {
             withContext(Dispatchers.IO) {
+                var successLen = 0L
+                var totalLen = 0L
                 task.downloadQueue.forEach {
+                    totalLen += it.size
                     //有标记下载成功的，直接放置到成功队列
                     if (it.state == State.SUCCESS) {
                         task.successTasks.addSuccessItem(it)
+                        successLen += it.size
                         return@forEach
                     }
                     //检查本地是否存在同名文件，并且 md5 是否一致
-                    if (ConfigCenter.IO.checkFileIfExist(it.path, it.md5)) {
+                    val fileCheckData = ConfigCenter.IO.checkFileIfExist(it.path, it.md5)
+                    successLen += fileCheckData.len
+                    if (fileCheckData.exist) {
                         //本地已经存在，且 md5 匹配
                         task.successTasks.addSuccessItem(it)
                         ULog.i("$it 下载成功")
@@ -55,12 +61,18 @@ class DownloadManager private constructor() {
                     }
                 }
 
+                uInternalTask.scheduleModule.init(
+                    successLen,
+                    totalLen,
+                    uInternalTask.notificationId
+                )
+
                 task.pendingQueue.addAll(task.downloadQueue)
                 task.successTasks.forEach {
                     task.pendingQueue.remove(it)
                 }
 
-                uInternalTask.speedModule.start()
+                uInternalTask.scheduleModule.start(service.applicationContext)
                 //开始下载
                 task.pendingQueue.forEach {
                     //下载线程池
@@ -77,14 +89,16 @@ class DownloadManager private constructor() {
                                     task.failedTasks.add(it)
                                 } else {
                                     val io = ConfigCenter.IO
-                                    uInternalTask.speedModule.add(io)
+                                    uInternalTask.scheduleModule.add(io)
                                     if (io.writeFile(it.path, this)
                                     ) {
                                         downLoadCount--
                                         ULog.i(
                                             "$it 11111下载成功"
                                         )
-                                        task.successTasks.addSuccessItem(it)
+                                        task.successTasks.addSuccessItem(
+                                            it
+                                        )
                                     } else {
                                         downLoadCount--
                                         ULog.i("$it 11111下载失败")
@@ -116,5 +130,5 @@ data class UInternalTask(
     val uTask: UTask,
     var notification: Notification? = null,
     var notificationId: Int = NotificationModule.DEFAULT_ID,
-    val speedModule: DownloadSpeedModule = DownloadSpeedModule()
+    val scheduleModule: DownloadScheduleModule = DownloadScheduleModule()
 )

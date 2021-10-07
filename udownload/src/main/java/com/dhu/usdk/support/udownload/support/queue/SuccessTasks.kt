@@ -2,6 +2,7 @@ package com.dhu.usdk.support.udownload.support.queue
 
 import com.dhu.usdk.support.udownload.Item
 import com.dhu.usdk.support.udownload.State
+import com.dhu.usdk.support.udownload.modules.DownloadScheduleModule
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.collections.ArrayList

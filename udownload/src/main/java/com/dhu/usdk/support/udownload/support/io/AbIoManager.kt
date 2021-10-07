@@ -24,18 +24,26 @@ abstract class AbIoManager {
         const val TEMP = ".temp"
     }
 
-    suspend fun checkFileIfExist(filePath: String, md5: String): Boolean {
+    suspend fun checkFileIfExist(filePath: String, md5: String): FileCheckData {
         return withContext(Dispatchers.IO) {
             val file = File(filePath)
-            if (file.exists() && file.md5() == md5) {
-                return@withContext true
+            if (file.exists()) {
+                val fileMd5 = file.md5()
+                if (fileMd5 == md5) {
+                    return@withContext FileCheckData(true, file.length())
+                } else {
+                    ULog.e("file $filePath exist, but the md5 is failed, $fileMd5 vs $md5")
+                }
             }
 
             val tempFile = File(getTempPath(filePath))
+            val len = tempFile.length()
             if (tempFile.exists() && tempFile.md5() == md5) {
-                return@withContext mv2TargetFile(filePath)
+                if (mv2TargetFile(filePath)) {
+                    return@withContext FileCheckData(true, len)
+                }
             }
-            return@withContext false
+            return@withContext FileCheckData(false, len)
         }
     }
 
@@ -76,3 +84,5 @@ abstract class AbIoManager {
         return filePath + TEMP
     }
 }
+
+data class FileCheckData(val exist: Boolean, val len: Long)

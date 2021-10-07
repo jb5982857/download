@@ -3,6 +3,7 @@ package com.dhu.usdk.support.udownload
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.IBinder
 import com.dhu.usdk.support.udownload.modules.DownloadManager
 import com.dhu.usdk.support.udownload.utils.ObjectWrapperForBinder
@@ -13,10 +14,15 @@ class UDownloadService : Service() {
         const val TASK = "task"
 
         fun add(context: Context, uTask: UTask) {
-            context.startService(Intent(context, UDownloadService::class.java).apply {
+            val intent = Intent(context, UDownloadService::class.java).apply {
                 putExtra(ACTION, Action.ADD.value)
                 putExtra(TASK, ObjectWrapperForBinder.create(uTask))
-            })
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startService(intent)
+            } else {
+                context.startService(intent)
+            }
         }
     }
 

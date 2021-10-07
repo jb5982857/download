@@ -12,7 +12,10 @@ import androidx.core.app.NotificationCompat
 object NotificationModule {
     const val DEFAULT_ID = 3000
     private var id = DEFAULT_ID
-    fun createNotification(context: Context): Notification {
+
+    private var builder: NotificationCompat.Builder? = null
+
+    private fun createBuilder(context: Context): NotificationCompat.Builder {
         val notificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager?
 
@@ -40,15 +43,33 @@ object NotificationModule {
         builder.setContentTitle("下载中")
         //通知内容
         builder.setContentText("下载进度")
+            .setProgress(100, 0, false)
         //设定通知显示的时间
         val activityIntent =
             context.packageManager.getLaunchIntentForPackage(context.packageName)
         val pendingIntent =
             PendingIntent.getActivity(context, 1, activityIntent, PendingIntent.FLAG_UPDATE_CURRENT)
         builder.setContentIntent(pendingIntent)
+        return builder
+    }
 
+    fun createNotification(context: Context): Notification {
+        if (builder == null) {
+            builder = createBuilder(context)
+        }
         //创建通知并返回
-        return builder.build()
+        return builder!!.build()
+    }
+
+    fun updateProgress(context: Context, id: Int, progress: Int, content: String) {
+        if (builder == null) {
+            builder = createBuilder(context)
+        }
+        builder?.setProgress(100, progress, false)
+        builder?.setContentText(content)
+        val notificationManager =
+            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager?
+        notificationManager?.notify(id, builder?.build())
     }
 
     @Synchronized
