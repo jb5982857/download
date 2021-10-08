@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
+import android.os.PowerManager
 import com.dhu.usdk.support.udownload.modules.DownloadManager
 import com.dhu.usdk.support.udownload.utils.ObjectWrapperForBinder
 
@@ -19,7 +20,7 @@ class UDownloadService : Service() {
                 putExtra(TASK, ObjectWrapperForBinder.create(uTask))
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startService(intent)
+                context.startForegroundService(intent)
             } else {
                 context.startService(intent)
             }
@@ -37,6 +38,7 @@ class UDownloadService : Service() {
 
         val uTask = ObjectWrapperForBinder.getData(intent.getBundleExtra(TASK)) as UTask?
 
+        wakeLock.acquire()
         when (intent.getIntExtra(ACTION, Action.NONE.value)) {
             Action.NONE.value -> {
 
@@ -69,6 +71,16 @@ class UDownloadService : Service() {
         return START_STICKY
     }
 
+    private val wakeLock: PowerManager.WakeLock by lazy {
+        (getSystemService(Context.POWER_SERVICE) as PowerManager).run {
+            newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MyApp::UDownloadWakeLock")
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        wakeLock.release()
+    }
 }
 
 enum class Action(val value: Int) {

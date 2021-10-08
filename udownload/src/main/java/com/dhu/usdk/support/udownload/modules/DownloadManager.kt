@@ -90,7 +90,7 @@ class DownloadManager private constructor() {
                                 } else {
                                     val io = ConfigCenter.IO
                                     uInternalTask.scheduleModule.add(io)
-                                    if (io.writeFile(it.path, this)
+                                    if (io.writeFile(it.path, this, it.md5)
                                     ) {
                                         downLoadCount--
                                         ULog.i(
@@ -103,6 +103,20 @@ class DownloadManager private constructor() {
                                         downLoadCount--
                                         ULog.i("$it 11111下载失败")
                                         task.failedTasks.add(it)
+                                    }
+                                }
+                                if (task.downloadQueue.size == task.successTasks.size + task.failedTasks.size) {
+                                    //下载完成
+                                    if (task.failedTasks.size == 0) {
+                                        NotificationModule.showSuccessNotification(
+                                            service.applicationContext,
+                                            uInternalTask.notificationId
+                                        )
+                                    } else {
+                                        NotificationModule.showFailedNotification(
+                                            service.applicationContext,
+                                            uInternalTask.notificationId
+                                        )
                                     }
                                 }
                             }

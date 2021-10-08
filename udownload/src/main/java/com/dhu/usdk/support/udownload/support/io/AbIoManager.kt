@@ -6,7 +6,6 @@ import com.dhu.usdk.support.udownload.utils.moveData
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.io.FileInputStream
 import java.io.InputStream
 
 abstract class AbIoManager {
@@ -14,14 +13,17 @@ abstract class AbIoManager {
     var isWriteFinish = false
 
     //新下载且写入的长度
-    var writeLen = 0L
-        set(value) {
-            field = value
-            ULog.d("the all len is $writeLen")
-        }
+    @Volatile
+    protected var bufferLen = 0L
 
     companion object {
         const val TEMP = ".temp"
+    }
+
+    fun getBufferedLen(): Long {
+        val result = bufferLen
+        bufferLen = 0
+        return result
     }
 
     suspend fun checkFileIfExist(filePath: String, md5: String): FileCheckData {
@@ -51,13 +53,20 @@ abstract class AbIoManager {
         return moveData(File(getTempPath(filePath)), File(filePath))
     }
 
-    fun writeFile(filePath: String, inputStream: InputStream): Boolean {
+    fun writeFile(filePath: String, inputStream: InputStream, md5: String): Boolean {
         createTempFileIfNeed(filePath)
         if (!saveFile(getTempPath(filePath), inputStream)) {
             return false
         }
         isWriteFinish = true
-        return mv2TargetFile(filePath)
+        val tempFile = File(getTempPath(filePath))
+        val tempMd5 = tempFile.md5()
+        return if (tempFile.md5() == md5) {
+            mv2TargetFile(filePath)
+        } else {
+            ULog.e("download finish but md5 error , $tempMd5 vs $md5 ")
+            false
+        }
     }
 
     private fun createTempFileIfNeed(filePath: String) {

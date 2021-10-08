@@ -17,7 +17,7 @@ class RandomAccessFileManager : AbIoManager() {
                     len = it
                 } != -1) {
                 raf.write(buffer, 0, len)
-                writeLen += len
+                bufferLen += len
             }
         } catch (e: FileNotFoundException) {
             e.printStackTrace()

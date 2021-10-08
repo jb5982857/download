@@ -1,9 +1,9 @@
 package com.dhu.usdk.support.udownload.modules
 
-import android.app.Notification
 import android.content.Context
 import android.os.Handler
 import android.os.HandlerThread
+import android.os.Message
 import com.dhu.usdk.support.udownload.support.io.AbIoManager
 import com.dhu.usdk.support.udownload.utils.ULog
 import com.dhu.usdk.support.udownload.utils.decimalFormat
@@ -32,9 +32,12 @@ class DownloadScheduleModule() {
 
     companion object {
         const val DELAY_TIME = 1_000L
+        const val WHAT_ADD = 20
+        const val WHAT_SCHEDULE = 30
     }
 
     fun init(successLen: Long, totalLen: Long, notificationId: Int?) {
+        ULog.d("init success $successLen, total $totalLen")
         this.successLen = successLen
         this.totalLen = totalLen
         this.notificationId = notificationId
@@ -47,39 +50,50 @@ class DownloadScheduleModule() {
         }
 
         mHandler = Handler(downloadHandlerThread.looper) {
-            val lastSuccessLen = successLen
-            val needRemoveManagers = ArrayList<AbIoManager>()
-            ioManagers.forEach {
-                successLen += it.writeLen
-                if (it.isWriteFinish) {
-                    needRemoveManagers.add(it)
+            when (it.what) {
+                WHAT_ADD -> {
+                    if (it.obj is AbIoManager) {
+                        ioManagers.add(it.obj as AbIoManager)
+                    }
+                }
+
+                WHAT_SCHEDULE -> {
+                    val lastSuccessLen = successLen
+                    val needRemoveManagers = ArrayList<AbIoManager>()
+                    ioManagers.forEach {
+                        successLen += it.getBufferedLen()
+                        if (it.isWriteFinish) {
+                            needRemoveManagers.add(it)
+                        }
+                    }
+
+                    notificationId?.apply {
+                        val progress = successLen.toFloat() * 100 / totalLen
+                        NotificationModule.updateProgress(
+                            context,
+                            this,
+                            progress.toInt(), "下载进度 ${decimalFormat.format(progress)}% , 下载速度 ${
+                                getSpeed(
+                                    successLen - lastSuccessLen,
+                                    (DELAY_TIME / 1000).toInt()
+                                )
+                            }"
+                        )
+                    }
+                    needRemoveManagers.forEach {
+                        ioManagers.remove(it)
+                    }
+                    mHandler?.sendEmptyMessageDelayed(WHAT_SCHEDULE, DELAY_TIME)
                 }
             }
 
-            notificationId?.apply {
-                val progress = successLen.toFloat() * 100 / totalLen
-                NotificationModule.updateProgress(
-                    context,
-                    this,
-                    progress.toInt(), "下载进度 ${decimalFormat.format(progress)} , 下载速度 ${
-                        getSpeed(
-                            successLen - lastSuccessLen,
-                            (DELAY_TIME / 1000).toInt()
-                        )
-                    }"
-                )
-            }
-            needRemoveManagers.forEach {
-                ioManagers.remove(it)
-            }
-            mHandler?.sendEmptyMessageDelayed(0x123, DELAY_TIME)
             return@Handler true
         }
 
-        mHandler?.sendEmptyMessageDelayed(0x123, DELAY_TIME)
+        mHandler?.sendEmptyMessageDelayed(WHAT_SCHEDULE, DELAY_TIME)
     }
 
     fun add(ioManager: AbIoManager) {
-        ioManagers.add(ioManager)
+        Message.obtain(mHandler, WHAT_ADD, ioManager).sendToTarget()
     }
 }

@@ -31,7 +31,7 @@ class MainActivity : AppCompatActivity() {
             .build()
         OkHttpClient.Builder().build().newCall(request).enqueue(object : Callback {
             override fun onFailure(p0: Call, p1: IOException) {
-
+                ULog.e("test http error ", p1)
             }
 
             override fun onResponse(p0: Call, response: Response) {
