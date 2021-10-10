@@ -34,6 +34,7 @@ class DownloadScheduleModule() {
         const val DELAY_TIME = 1_000L
         const val WHAT_ADD = 20
         const val WHAT_SCHEDULE = 30
+        const val WHAT_STOP = 40
     }
 
     fun init(successLen: Long, totalLen: Long, notificationId: Int?) {
@@ -48,6 +49,8 @@ class DownloadScheduleModule() {
             ULog.e("duplicate start call")
             return
         }
+
+        isStart = true
 
         mHandler = Handler(downloadHandlerThread.looper) {
             when (it.what) {
@@ -66,6 +69,9 @@ class DownloadScheduleModule() {
                             needRemoveManagers.add(it)
                         }
                     }
+                    if (!isStart) {
+                        return@Handler true
+                    }
 
                     notificationId?.apply {
                         val progress = successLen.toFloat() * 100 / totalLen
@@ -83,7 +89,9 @@ class DownloadScheduleModule() {
                     needRemoveManagers.forEach {
                         ioManagers.remove(it)
                     }
-                    mHandler?.sendEmptyMessageDelayed(WHAT_SCHEDULE, DELAY_TIME)
+                    if (isStart) {
+                        mHandler?.sendEmptyMessageDelayed(WHAT_SCHEDULE, DELAY_TIME)
+                    }
                 }
             }
 
@@ -95,5 +103,11 @@ class DownloadScheduleModule() {
 
     fun add(ioManager: AbIoManager) {
         Message.obtain(mHandler, WHAT_ADD, ioManager).sendToTarget()
+    }
+
+    fun stop() {
+        isStart = false
+        mHandler?.removeMessages(WHAT_SCHEDULE)
+        mHandler?.removeMessages(WHAT_ADD)
     }
 }

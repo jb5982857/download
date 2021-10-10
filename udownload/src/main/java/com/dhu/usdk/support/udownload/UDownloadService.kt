@@ -38,7 +38,7 @@ class UDownloadService : Service() {
 
         val uTask = ObjectWrapperForBinder.getData(intent.getBundleExtra(TASK)) as UTask?
 
-        wakeLock.acquire()
+        wakeLock.acquire(10 * 60 * 1000L /*10 minutes*/)
         when (intent.getIntExtra(ACTION, Action.NONE.value)) {
             Action.NONE.value -> {
 

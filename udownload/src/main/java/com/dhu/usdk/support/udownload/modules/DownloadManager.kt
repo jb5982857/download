@@ -61,6 +61,10 @@ class DownloadManager private constructor() {
                     }
                 }
 
+                if (finishTaskIfNeeded(service, uInternalTask)) {
+                    return@withContext
+                }
+
                 uInternalTask.scheduleModule.init(
                     successLen,
                     totalLen,
@@ -105,20 +109,8 @@ class DownloadManager private constructor() {
                                         task.failedTasks.add(it)
                                     }
                                 }
-                                if (task.downloadQueue.size == task.successTasks.size + task.failedTasks.size) {
-                                    //下载完成
-                                    if (task.failedTasks.size == 0) {
-                                        NotificationModule.showSuccessNotification(
-                                            service.applicationContext,
-                                            uInternalTask.notificationId
-                                        )
-                                    } else {
-                                        NotificationModule.showFailedNotification(
-                                            service.applicationContext,
-                                            uInternalTask.notificationId
-                                        )
-                                    }
-                                }
+                                ULog.i("有结束了的，总数 ${task.downloadQueue.size}, 成功数 ${task.successTasks.size}, 失败数 ${task.failedTasks.size}")
+                                finishTaskIfNeeded(service, uInternalTask)
                             }
                     }
                 }
@@ -137,6 +129,30 @@ class DownloadManager private constructor() {
 
     fun stop(context: Context, task: UTask) {
 
+    }
+
+    private fun finishTaskIfNeeded(
+        service: UDownloadService,
+        uInternalTask: UInternalTask
+    ): Boolean {
+        if (uInternalTask.uTask.downloadQueue.size == uInternalTask.uTask.successTasks.size + uInternalTask.uTask.failedTasks.size) {
+            uInternalTask.scheduleModule.stop()
+            //下载完成
+            if (uInternalTask.uTask.failedTasks.size == 0) {
+                NotificationModule.showSuccessNotification(
+                    service.applicationContext,
+                    uInternalTask.notificationId
+                )
+            } else {
+                NotificationModule.showFailedNotification(
+                    service.applicationContext,
+                    uInternalTask.notificationId
+                )
+            }
+            service.stopSelf()
+            return true
+        }
+        return false
     }
 }
 

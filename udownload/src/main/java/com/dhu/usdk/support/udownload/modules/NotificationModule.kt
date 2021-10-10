@@ -11,7 +11,8 @@ import androidx.core.app.NotificationCompat
 
 object NotificationModule {
     const val DEFAULT_ID = 3000
-    private var id = DEFAULT_ID
+    const val RESULT_ID = 10000
+    private var downloadId = DEFAULT_ID
 
     private var builder: NotificationCompat.Builder? = null
 
@@ -83,7 +84,7 @@ object NotificationModule {
         builder?.setAutoCancel(true)
         val notificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager?
-        notificationManager?.notify(id, builder?.build())
+        notificationManager?.notify(RESULT_ID + (id - DEFAULT_ID), builder?.build())
     }
 
     fun showFailedNotification(context: Context, id: Int) {
@@ -91,16 +92,16 @@ object NotificationModule {
             builder = createBuilder(context)
         }
         builder?.setContentTitle("下载失败")
-        builder?.setProgress(0, 0, false)
+        builder?.setProgress(100, 0, false)
         builder?.setContentText("")
         builder?.setAutoCancel(true)
         val notificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager?
-        notificationManager?.notify(id, builder?.build())
+        notificationManager?.notify(RESULT_ID + (id - DEFAULT_ID), builder?.build())
     }
 
     @Synchronized
     fun getNotificationId(): Int {
-        return ++id
+        return ++downloadId
     }
 }
