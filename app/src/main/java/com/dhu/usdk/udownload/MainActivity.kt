@@ -7,7 +7,6 @@ import com.dh.usdk.support.uokhttp.*
 import com.dhu.usdk.support.udownload.Item
 import com.dhu.usdk.support.udownload.UTask
 import com.dhu.usdk.support.udownload.utils.ULog
-import java.io.BufferedInputStream
 import java.io.IOException
 
 class MainActivity : AppCompatActivity() {
@@ -25,7 +24,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         dirPath =
-            applicationContext.getExternalFilesDir("")?.getAbsolutePath() + "/udownload/" ?: ""
+            applicationContext.getExternalFilesDir("")?.getAbsolutePath() + "/udownload/"
         val request = Request.Builder()
             .url(URL)
             .build()
@@ -35,14 +34,27 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun onResponse(p0: Call, response: Response) {
+                val result = response.body()?.string()
                 val data =
-                    Gson().fromJson(response.body()?.string(), RootData::class.java)
+                    Gson().fromJson(result, RootData::class.java)
                 UTask(true, "test").apply {
                     data.manifiest.forEach {
                         add(
                             Item(
                                 "https://inner-cdn.dhgames.cn:12345/ih/${it.md5}",
                                 dirPath + it.path, it.md5, it.size
+                            )
+                        )
+                    }
+                }.start(this@MainActivity)
+
+                UTask(true, "test2").apply {
+                    data.manifiest.forEach {
+                        add(
+                            Item(
+                                "https://inner-cdn.dhgames.cn:12345/ih/${it.md5}",
+                                applicationContext.getExternalFilesDir("")
+                                    ?.getAbsolutePath() + "/udownload1/" + it.path, it.md5, it.size
                             )
                         )
                     }
