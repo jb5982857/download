@@ -6,3 +6,4 @@ import java.util.concurrent.Executors
 
 
 val DOWNLOAD_POOL: ExecutorService = Executors.newFixedThreadPool(ConfigCenter.THREAD_COUNT)
+val TASK_POOL: ExecutorService = Executors.newFixedThreadPool(ConfigCenter.TASK_COUNT)
