@@ -1,22 +1,24 @@
-package com.dhu.usdk.support.udownload.modules
+package com.dhu.usdk.support.udownload.modules.download
 
 import android.app.Notification
 import android.content.Context
 import com.dhu.usdk.support.udownload.State
 import com.dhu.usdk.support.udownload.UDownloadService
 import com.dhu.usdk.support.udownload.UTask
+import com.dhu.usdk.support.udownload.modules.ConfigCenter
 import com.dhu.usdk.support.udownload.modules.ConfigCenter.TASK_COUNT
-import com.dhu.usdk.support.udownload.modules.download.DownLoadTaskManager
-import com.dhu.usdk.support.udownload.support.thread.DOWNLOAD_POOL
+import com.dhu.usdk.support.udownload.modules.DownloadScheduleModule
+import com.dhu.usdk.support.udownload.modules.NotificationModule
+import com.dhu.usdk.support.udownload.support.thread.DOWNLOAD_POOL_THREAD_FACTORY
 import com.dhu.usdk.support.udownload.support.thread.TASK_POOL
-import com.dhu.usdk.support.udownload.support.thread.coroutineScope
 import com.dhu.usdk.support.udownload.utils.ULog
 import com.dhu.usdk.support.udownload.utils.application
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 
 class DownloadManager private constructor() {
     private val taskManager = DownLoadTaskManager()
@@ -66,7 +68,8 @@ class DownloadManager private constructor() {
     }
 
     private fun startTask() {
-        val task = taskManager.getTask()
+        val task = taskManager.next()
+        ULog.d("task $task 开始了")
         GlobalScope.launch {
             withContext(Dispatchers.IO) {
                 var successLen = 0L
@@ -109,7 +112,8 @@ class DownloadManager private constructor() {
                 //开始下载
                 task.uTask.pendingQueue.forEach {
                     //下载线程池
-                    DOWNLOAD_POOL.submit {
+                    ULog.d("utask 给 线程池 ${task.downloadPool} 添加了东西")
+                    task.downloadPool.submit {
                         ULog.d("$it 11111正在下载 , 当前下载数 ${++downLoadCount}")
                         ConfigCenter.HTTP.download(
                             it.url,
@@ -176,5 +180,9 @@ data class UInternalTask(
     val uTask: UTask,
     var notification: Notification? = null,
     var notificationId: Int = NotificationModule.DEFAULT_ID,
-    val scheduleModule: DownloadScheduleModule = DownloadScheduleModule()
+    val scheduleModule: DownloadScheduleModule = DownloadScheduleModule(),
+    val downloadPool: ExecutorService = Executors.newFixedThreadPool(
+        ConfigCenter.THREAD_COUNT,
+        DOWNLOAD_POOL_THREAD_FACTORY
+    )
 )

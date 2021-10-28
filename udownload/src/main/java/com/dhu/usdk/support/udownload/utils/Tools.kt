@@ -2,6 +2,7 @@ package com.dhu.usdk.support.udownload.utils
 
 import android.app.Application
 import java.text.DecimalFormat
+import java.util.concurrent.ThreadFactory
 
 val application by lazy {
     try {

@@ -23,10 +23,11 @@ class RandomAccessFileManager : AbIoManager() {
             e.printStackTrace()
             return false
         } catch (e: IOException) {
-            e.printStackTrace()
+            ULog.e("download 的write error ", e)
             return false
         } finally {
             try {
+                inputStream.close()
                 raf?.close()
             } catch (e: Exception) {
             }

@@ -6,7 +6,7 @@ import android.content.Intent
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
-import com.dhu.usdk.support.udownload.modules.DownloadManager
+import com.dhu.usdk.support.udownload.modules.download.DownloadManager
 import com.dhu.usdk.support.udownload.utils.ObjectWrapperForBinder
 
 class UDownloadService : Service() {

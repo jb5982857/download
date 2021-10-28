@@ -40,7 +40,9 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
 
     implementation "com.dhgames.usdk.plugins:ugson:2.8"
-    implementation "com.dhgames.usdk.plugins:uokhttp:3.14.9.2"
+    implementation "com.dhgames.usdk.plugins:uokhttp:3.14.9.11"
+//    implementation("com.squareup.okhttp3:okhttp:3.14.9")
+//    implementation("com.squareup.okhttp3:logging-interceptor:3.14.9")
     implementation "com.dhgames.usdk.plugins:uokhttp-log-interceptor:4.0.0"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.8"
 }
