@@ -1,14 +1,17 @@
 package com.dhu.usdk.support.udownload.utils
 
 import android.app.Application
+import android.os.Handler
+import android.os.Looper
 import java.text.DecimalFormat
-import java.util.concurrent.ThreadFactory
+
+val mainHandler = Handler(Looper.getMainLooper())
 
 val application by lazy {
     try {
         return@lazy Class.forName("android.app.ActivityThread")
-            .getMethod("currentApplication")
-            .invoke(null) as Application
+                .getMethod("currentApplication")
+                .invoke(null) as Application
     } catch (e: Exception) {
         e.printStackTrace();
     }

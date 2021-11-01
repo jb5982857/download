@@ -1,9 +1,6 @@
 package com.dhu.usdk.support.udownload.modules
 
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
+import android.app.*
 import android.content.Context
 import android.os.Build
 import androidx.core.app.NotificationCompat
@@ -17,9 +14,20 @@ object NotificationModule {
     private var builder: NotificationCompat.Builder? = null
     private var notificationManager: NotificationManager? = null
 
+    private val downloadNotificationIds = mutableListOf<Int>()
+
+    /**
+     * 删除下载的 id ，返回所有 id 是否为空
+     */
+    @Synchronized
+    fun remove(id: Int): Boolean {
+        downloadNotificationIds.remove(id)
+        return downloadNotificationIds.isEmpty()
+    }
+
     private fun createBuilder(context: Context): NotificationCompat.Builder {
         notificationManager =
-            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager?
+                context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager?
 
         // 唯一的通知通道的id.
         val notificationChannelId = "udownload_channel_id"
@@ -31,14 +39,14 @@ object NotificationModule {
             //通道的重要程度
             val importance = NotificationManager.IMPORTANCE_HIGH
             val notificationChannel =
-                NotificationChannel(notificationChannelId, channelName, importance)
+                    NotificationChannel(notificationChannelId, channelName, importance)
             notificationChannel.description = "download progress"
             //震动notificationManager
             notificationManager?.createNotificationChannel(notificationChannel)
         }
 
         val builder: NotificationCompat.Builder =
-            NotificationCompat.Builder(context, notificationChannelId)
+                NotificationCompat.Builder(context, notificationChannelId)
         //通知小图标
         builder.setSmallIcon(context.applicationInfo.icon)
         //通知标题
@@ -46,12 +54,13 @@ object NotificationModule {
         builder.setSilent(true)
         //通知内容
         builder.setContentText("准备中，请稍等")
-            .setProgress(100, 0, false)
+                .setProgress(100, 0, false)
         //设定通知显示的时间
         val activityIntent =
-            context.packageManager.getLaunchIntentForPackage(context.packageName)
+                context.packageManager.getLaunchIntentForPackage(context.packageName)
         val pendingIntent =
-            PendingIntent.getActivity(context, 1, activityIntent, PendingIntent.FLAG_UPDATE_CURRENT)
+                PendingIntent.getActivity(context, 1, activityIntent,
+                        PendingIntent.FLAG_UPDATE_CURRENT)
         builder.setContentIntent(pendingIntent)
         return builder
     }
@@ -97,6 +106,13 @@ object NotificationModule {
         builder?.setContentText("")
         builder?.setAutoCancel(true)
         notificationManager?.notify(RESULT_ID + (id - DEFAULT_ID), builder?.build())
+    }
+
+    fun showForegroundService(service: Service, notification: Notification): Int {
+        val id = getNotificationId()
+        downloadNotificationIds.add(id)
+        service.startForeground(id, notification)
+        return id
     }
 
     @Synchronized

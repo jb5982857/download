@@ -7,6 +7,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.InputStream
+import java.util.*
 
 abstract class AbIoManager {
     //是否完成到本地的写入
@@ -17,7 +18,7 @@ abstract class AbIoManager {
     protected var bufferLen = 0L
 
     companion object {
-        const val TEMP = ".temp"
+        const val TEMP = ".download"
     }
 
     fun getBufferedLen(): Long {

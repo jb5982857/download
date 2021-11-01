@@ -6,7 +6,9 @@ import android.content.Intent
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
+import com.dhu.usdk.support.udownload.modules.NotificationModule
 import com.dhu.usdk.support.udownload.modules.download.DownloadManager
+import com.dhu.usdk.support.udownload.modules.download.UInternalTask
 import com.dhu.usdk.support.udownload.utils.ObjectWrapperForBinder
 
 class UDownloadService : Service() {
@@ -46,7 +48,26 @@ class UDownloadService : Service() {
 
             Action.ADD.value -> {
                 uTask?.apply {
-                    DownloadManager.instance.add(this@UDownloadService, this)
+                    val uInternalTask = UInternalTask(this, downloadFinish = {
+                        if (it.uTask.failedTasks.size == 0) {
+                            NotificationModule.showSuccessNotification(
+                                    this@UDownloadService,
+                                    it.notificationId
+                            )
+                        } else {
+                            NotificationModule.showFailedNotification(
+                                    this@UDownloadService,
+                                    it.notificationId
+                            )
+                        }
+                        removeNotification(it.notificationId)
+                    })
+                    uInternalTask.notification = NotificationModule.createNotification(
+                            this@UDownloadService)
+                    uInternalTask.notificationId =
+                            NotificationModule.showForegroundService(this@UDownloadService,
+                                    uInternalTask.notification!!)
+                    DownloadManager.instance.add(uInternalTask)
                 }
             }
 
@@ -69,6 +90,13 @@ class UDownloadService : Service() {
             }
         }
         return START_STICKY
+    }
+
+    private fun removeNotification(id: Int) {
+        val isEmpty = NotificationModule.remove(id)
+        if (isEmpty) {
+            stopSelf()
+        }
     }
 
     private val wakeLock: PowerManager.WakeLock by lazy {

@@ -11,10 +11,11 @@ import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
+import java.util.*
 
 
 fun File.md5(): String {
-    return MD5Util.getFileMD5(this)
+    return MD5Util.getFileMD5(this).toLowerCase(Locale.ROOT)
 }
 
 fun moveData(source: File, target: File): Boolean {
@@ -52,7 +53,7 @@ fun moveData(source: File, target: File): Boolean {
     val end = System.currentTimeMillis()
     val `val` = end - start
     ULog.d(
-        "migrate data take time " + `val` + " from " + source.absolutePath + " to " + target.absolutePath
+            "migrate data take time " + `val` + " from " + source.absolutePath + " to " + target.absolutePath
     )
     return true
 }

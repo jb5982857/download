@@ -1,6 +1,5 @@
 package com.dhu.usdk.support.udownload.modules.download
 
-import com.dhu.usdk.support.udownload.modules.download.UInternalTask
 import java.util.concurrent.ConcurrentLinkedQueue
 
 class DownLoadTaskManager {

@@ -3,14 +3,16 @@ package com.dhu.usdk.support.udownload
 import android.content.Context
 import com.dhu.usdk.support.udownload.support.queue.SuccessTasks
 import com.dhu.usdk.support.udownload.utils.ULog
+import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
+import kotlin.collections.ArrayList
 
 @Volatile
 var taskIndex = 0
 
 class UTask(
-    val isShowNotification: Boolean = true,
-    val name: String = taskIndex++.toString()
+        val isShowNotification: Boolean = true,
+        val name: String = taskIndex++.toString()
 ) {
     private var isStart = false
     val downloadQueue = ConcurrentLinkedQueue<Item>()
@@ -64,6 +66,7 @@ class UTask(
                 }
             }
         }
+        item.md5 = item.md5.toLowerCase(Locale.ROOT)
         downloadQueue.add(item)
         return this
     }
@@ -96,8 +99,10 @@ class UTask(
 }
 
 enum class State(value: Int) {
-    READY(1), DOWNLOADING(2), ON_PAUSE(3), ON_STOP(4), CELLULAR_PAUSE(5), ON_FINISH(6), SUCCESS(0), FAILED(
-        -1
+    READY(1), DOWNLOADING(2), ON_PAUSE(3), ON_STOP(4), CELLULAR_PAUSE(5), ON_FINISH(6), SUCCESS(
+            0),
+    FAILED(
+            -1
     )
 }
 
@@ -106,14 +111,12 @@ enum class State(value: Int) {
  * path -> 目标路径，下载过程中会生成 path.temp 文件，下载完成后 rename 到 path
  * md5 -> 文件的 md5 值
  * size -> 文件大小，单位 byte
- * isRetry -> 文件在下载失败时，是否需要一次的重试
  */
 data class Item(
-    val url: String,
-    val path: String,
-    val md5: String,
-    val size: Long,
-    val isRetry: Boolean = true
+        val url: String,
+        val path: String,
+        var md5: String,
+        val size: Long
 ) {
     //重复的 item ，必须是 url 和 path 相同
     val duplicateItem = ArrayList<Item>()
@@ -121,6 +124,6 @@ data class Item(
     //该条下载的状态
     var state = State.READY
     override fun toString(): String {
-        return "Item(url='$url', path='$path', md5='$md5', size=$size, isRetry=$isRetry)"
+        return "Item(url='$url', path='$path', md5='$md5', size=$size)"
     }
 }
