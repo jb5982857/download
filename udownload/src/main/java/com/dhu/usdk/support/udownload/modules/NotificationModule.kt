@@ -14,15 +14,18 @@ object NotificationModule {
     private var builder: NotificationCompat.Builder? = null
     private var notificationManager: NotificationManager? = null
 
-    private val downloadNotificationIds = mutableListOf<Int>()
+    private val downloadNotificationIds = mutableListOf<ForegroundNotification>()
 
     /**
      * 删除下载的 id ，返回所有 id 是否为空
      */
     @Synchronized
-    fun remove(id: Int): Boolean {
-        downloadNotificationIds.remove(id)
-        return downloadNotificationIds.isEmpty()
+    fun remove(id: Int): ForegroundNotification? {
+        downloadNotificationIds.remove(downloadNotificationIds.find { it.id == id })
+        if (downloadNotificationIds.isNotEmpty()) {
+            return downloadNotificationIds[0]
+        }
+        return null
     }
 
     private fun createBuilder(context: Context): NotificationCompat.Builder {
@@ -49,12 +52,6 @@ object NotificationModule {
                 NotificationCompat.Builder(context, notificationChannelId)
         //通知小图标
         builder.setSmallIcon(context.applicationInfo.icon)
-        //通知标题
-        builder.setOngoing(true)
-        builder.setSilent(true)
-        //通知内容
-        builder.setContentText("准备中，请稍等")
-                .setProgress(100, 0, false)
         //设定通知显示的时间
         val activityIntent =
                 context.packageManager.getLaunchIntentForPackage(context.packageName)
@@ -66,28 +63,28 @@ object NotificationModule {
     }
 
     fun createNotification(context: Context): Notification {
-        if (builder == null) {
-            builder = createBuilder(context)
-        }
+        initBuildIfNeeded(context)
         //创建通知并返回
         return builder!!.build()
     }
 
+    @Synchronized
     fun updateProgress(context: Context, id: Int, progress: Int, content: String) {
-        if (builder == null) {
-            builder = createBuilder(context)
-        }
+        initBuildIfNeeded(context)
         builder?.setSilent(true)
         builder?.setContentTitle("下载中")
         builder?.setProgress(100, progress, false)
         builder?.setContentText(content)
-        notificationManager?.notify(id, builder?.build())
+        val notification = builder?.build()
+        val cacheNotification = downloadNotificationIds.find { it.id == id }
+        if (cacheNotification != null) {
+            cacheNotification.notification = notification ?: cacheNotification.notification
+        }
+        notificationManager?.notify(id, notification)
     }
 
     fun showSuccessNotification(context: Context, id: Int) {
-        if (builder == null) {
-            builder = createBuilder(context)
-        }
+        initBuildIfNeeded(context)
         builder?.setSilent(false)
         builder?.setContentTitle("下载完成")
         builder?.setProgress(100, 100, false)
@@ -97,9 +94,7 @@ object NotificationModule {
     }
 
     fun showFailedNotification(context: Context, id: Int) {
-        if (builder == null) {
-            builder = createBuilder(context)
-        }
+        initBuildIfNeeded(context)
         builder?.setSilent(false)
         builder?.setContentTitle("下载失败")
         builder?.setProgress(100, 0, false)
@@ -108,9 +103,25 @@ object NotificationModule {
         notificationManager?.notify(RESULT_ID + (id - DEFAULT_ID), builder?.build())
     }
 
+    fun removeNotification(id: Int) {
+        notificationManager?.cancel(id)
+    }
+
+    private fun initBuildIfNeeded(context: Context) {
+        if (builder == null) {
+            builder = createBuilder(context)
+        }
+        //通知标题
+        builder?.setOngoing(true)
+        builder?.setSilent(true)
+        //通知内容
+        builder?.setContentText("准备中，请稍等")
+                ?.setProgress(100, 0, false)
+    }
+
     fun showForegroundService(service: Service, notification: Notification): Int {
         val id = getNotificationId()
-        downloadNotificationIds.add(id)
+        downloadNotificationIds.add(ForegroundNotification(id, notification))
         service.startForeground(id, notification)
         return id
     }
@@ -120,3 +131,5 @@ object NotificationModule {
         return ++downloadId
     }
 }
+
+data class ForegroundNotification(val id: Int, var notification: Notification)

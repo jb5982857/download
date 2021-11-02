@@ -35,7 +35,7 @@ class UDownloadService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent == null) {
-            return START_STICKY
+            return super.onStartCommand(intent, flags, startId)
         }
 
         val uTask = ObjectWrapperForBinder.getData(intent.getBundleExtra(TASK)) as UTask?
@@ -89,13 +89,15 @@ class UDownloadService : Service() {
                 }
             }
         }
-        return START_STICKY
+        return super.onStartCommand(intent, flags, startId)
     }
 
     private fun removeNotification(id: Int) {
-        val isEmpty = NotificationModule.remove(id)
-        if (isEmpty) {
-            stopSelf()
+        val lastExistNotification = NotificationModule.remove(id)
+        NotificationModule.removeNotification(id)
+        lastExistNotification ?: stopSelf()
+        lastExistNotification?.apply {
+            startForeground(this.id, this.notification)
         }
     }
 
