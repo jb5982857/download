@@ -205,7 +205,7 @@ data class UInternalTask(
         val uTask: UTask,
         var notification: Notification? = null,
         val downloadFinish: (UInternalTask) -> Unit = {},
-        var notificationId: Int = NotificationModule.DEFAULT_ID,
+        var notificationId: Int? = null,
         val scheduleModule: DownloadScheduleModule = DownloadScheduleModule(),
         val downloadPool: ExecutorService = Executors.newFixedThreadPool(
                 ConfigCenter.THREAD_COUNT,

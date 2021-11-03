@@ -53,25 +53,30 @@ class UDownloadService : Service() {
             Action.ADD.value -> {
                 uTask?.apply {
                     val uInternalTask = UInternalTask(this, downloadFinish = {
-                        if (it.uTask.failedTasks.size == 0) {
-                            NotificationModule.showSuccessNotification(
+                        it.notificationId?.apply {
+                            if (it.uTask.failedTasks.size == 0) {
+                                NotificationModule.showSuccessNotification(
                                     this@UDownloadService,
-                                    it.notificationId
-                            )
-                        } else {
-                            NotificationModule.showFailedNotification(
+                                    this
+                                )
+                            } else {
+                                NotificationModule.showFailedNotification(
                                     this@UDownloadService,
-                                    it.notificationId
-                            )
+                                    this
+                                )
+                            }
+                            removeNotification(this)
                         }
-                        removeNotification(it.notificationId)
                     })
                     uInternalTask.notification = NotificationModule.createNotification(
-                            this@UDownloadService)
+                        this@UDownloadService
+                    )
                     isAlive = true
                     uInternalTask.notificationId =
-                            NotificationModule.showForegroundService(this@UDownloadService,
-                                    uInternalTask.notification!!)
+                        NotificationModule.showForegroundService(
+                            this@UDownloadService,
+                            uInternalTask.notification!!
+                        )
                     DownloadManager.instance.add(uInternalTask)
                 }
             }

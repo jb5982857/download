@@ -22,7 +22,7 @@ class MainActivity : AppCompatActivity() {
         //        const val URL = "https://f52755f1886e823dc1e1fbba521d504d.dlied1.cdntips.net/sqdd.myapp.com/myapp/qqteam/qq_hd/apad/qqhd_hd_5.8.8.3445_release.apk?mkey=615d132ab69630c8&f=0000&cip=182.150.22.61&proto=https"
         const val URL = "https://inner-cdn.dhgames.cn:12345/ih/9f5d08bd16083e796a6c7ff933613442"
         const val TEST_URL =
-                "https://inner-cdn.dhgames.cn:12345/ih/76ff3a21d4ddb5a557fd2872785c9bae"
+            "https://inner-cdn.dhgames.cn:12345/ih/76ff3a21d4ddb5a557fd2872785c9bae"
         const val TAG = "MainActivity"
     }
 
@@ -33,14 +33,14 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         dirPath =
-                applicationContext.getExternalFilesDir("")?.getAbsolutePath() + "/udownload/"
+            applicationContext.getExternalFilesDir("")?.getAbsolutePath() + "/udownload/"
 
     }
 
     fun btDownload(view: View) {
         val request = Request.Builder()
-                .url(URL)
-                .build()
+            .url(URL)
+            .build()
         OkHttpClient.Builder().build().newCall(request).enqueue(object : Callback {
             override fun onFailure(p0: Call, p1: IOException) {
                 ULog.e("test http error ", p1)
@@ -49,33 +49,36 @@ class MainActivity : AppCompatActivity() {
             override fun onResponse(p0: Call, response: Response) {
                 val result = response.body()?.string()
                 val data =
-                        Gson().fromJson(result, RootData::class.java)
+                    Gson().fromJson(result, RootData::class.java)
                 var aIndex = 0
                 var bIndex = 0
-                UTask(true, "test").apply {
+                UTask(false, "test").apply {
                     data.manifiest.forEach {
-                        if (aIndex >= 130) {
+                        if (aIndex >= 400) {
                             return@apply
                         }
                         aIndex++
                         add(
-                                Item(
-                                        "https://inner-cdn.dhgames.cn:12345/ih/${it.md5}",
-                                        dirPath + it.path, it.md5, it.size
-                                )
+                            Item(
+                                "https://inner-cdn.dhgames.cn:12345/ih/${it.md5}",
+                                dirPath + it.path, it.md5, it.size
+                            )
                         )
                     }
                 }.apply {
-                    downloadFinishListener = { tasks: Collection<Item>, successTasks: Collection<Item>, failedTasks: Collection<Item> ->
-                        appendResult(
-                                "下载结束了 总数${tasks.size} , 成功数${successTasks.size} , 失败数${failedTasks.size}")
-                    }
+                    downloadFinishListener =
+                        { tasks: Collection<Item>, successTasks: Collection<Item>, failedTasks: Collection<Item> ->
+                            appendResult(
+                                "下载结束了 总数${tasks.size} , 成功数${successTasks.size} , 失败数${failedTasks.size}"
+                            )
+                        }
                     downloadItemFinishListener = {
                         appendResult("item ${it.url} 下载完成")
                     }
-                    downloadProgressListener = { totalBytes: Long, finishBytes: Long, speed: String ->
-                        appendResult("下载进度，总大小 $totalBytes ，已经完成的大小 $finishBytes , 当前速度 $speed")
-                    }
+                    downloadProgressListener =
+                        { totalBytes: Long, finishBytes: Long, speed: String ->
+                            appendResult("下载进度，总大小 $totalBytes ，已经完成的大小 $finishBytes , 进度 ${finishBytes / totalBytes.toFloat()} , 当前速度 $speed")
+                        }
                     downloadStateChangeListener = {
                         appendResult("状态变化 $it")
                     }
@@ -106,8 +109,14 @@ class MainActivity : AppCompatActivity() {
 
     fun btMd5(view: View) {
         Thread {
-            Log.d("aaaa", "" + MD5Util.getFileMD5(File(applicationContext.getExternalFilesDir("")
-                    ?.absolutePath + "/dev_debug-1.8.0.apk")))
+            Log.d(
+                "aaaa", "" + MD5Util.getFileMD5(
+                    File(
+                        applicationContext.getExternalFilesDir("")
+                            ?.absolutePath + "/dev_debug-1.8.0.apk"
+                    )
+                )
+            )
         }.start()
 
     }
@@ -116,9 +125,9 @@ class MainActivity : AppCompatActivity() {
     fun btHttp(view: View) {
         Thread {
             val request = Request.Builder()
-                    .addHeader("Range", "bytes=0-")
-                    .url(TEST_URL)
-                    .build()
+                .addHeader("Range", "bytes=0-")
+                .url(TEST_URL)
+                .build()
             val ins = OkHttpClient.Builder().build().newCall(request).execute().body()?.byteStream()
             ULog.d("test http log , $ins")
         }.start()
