@@ -8,8 +8,10 @@ import com.dhu.usdk.support.udownload.UDownloadService
 import com.dhu.usdk.support.udownload.UTask
 import com.dhu.usdk.support.udownload.modules.ConfigCenter
 import com.dhu.usdk.support.udownload.modules.ConfigCenter.TASK_COUNT
+import com.dhu.usdk.support.udownload.modules.ConfigCenter.getIO
 import com.dhu.usdk.support.udownload.modules.DownloadScheduleModule
 import com.dhu.usdk.support.udownload.modules.NotificationModule
+import com.dhu.usdk.support.udownload.support.io.AbIoManager
 import com.dhu.usdk.support.udownload.support.thread.DOWNLOAD_POOL_THREAD_FACTORY
 import com.dhu.usdk.support.udownload.support.thread.TASK_POOL
 import com.dhu.usdk.support.udownload.utils.ULog
@@ -51,6 +53,7 @@ class DownloadManager private constructor() {
     @Volatile
     var downLoadCount = 0
     fun add(uInternalTask: UInternalTask) {
+        uInternalTask.io = getIO(uInternalTask)
         taskManager.addTask(uInternalTask)
     }
 
@@ -85,8 +88,10 @@ class DownloadManager private constructor() {
                         return@forEach
                     }
                     //检查本地是否存在同名文件，并且 md5 是否一致
-                    val fileCheckData = ConfigCenter.IO.checkFileIfExist(it.path,
-                            it.md5)
+                    val fileCheckData = task.io!!.checkFileIfExist(
+                        it.path,
+                        it.md5
+                    )
                     successLen += fileCheckData.len
                     if (fileCheckData.exist) {
                         //本地已经存在，且 md5 匹配
@@ -101,9 +106,9 @@ class DownloadManager private constructor() {
                 }
 
                 task.scheduleModule.init(
-                        successLen,
-                        totalLen,
-                        task.notificationId, task.uTask
+                    successLen,
+                    totalLen,
+                    task.notificationId, task.uTask
                 )
 
                 task.uTask.pendingQueue.addAll(task.uTask.downloadQueue)
@@ -125,48 +130,52 @@ class DownloadManager private constructor() {
         //下载线程池
         task.downloadPool.submit {
             ULog.d("$it 11111正在下载 , 当前下载数 ${++downLoadCount}")
+            task.uTask.lockItemTaskIfNeeded()
             ConfigCenter.HTTP.download(
-                    it.url,
-                    ConfigCenter.IO.getTempFileSize(it.path)
+                it.url,
+                task.io!!.getTempFileSize(it.path)
             )
-                    .apply {
-                        if (this == null) {
+                .apply {
+                    task.uTask.lockItemTaskIfNeeded()
+                    if (this == null) {
+                        downLoadCount--
+                        ULog.i("$it 11111下载失败 null")
+                        task.uTask.failedTasks.add(it)
+                    } else {
+                        task.scheduleModule.add(task.io!!)
+                        if (task.io!!.writeFile(it.path, this, it.md5)
+                        ) {
                             downLoadCount--
-                            ULog.i("$it 11111下载失败 null")
-                            task.uTask.failedTasks.add(it)
+                            ULog.i(
+                                "$it 11111下载成功"
+                            )
+                            task.uTask.successTasks.addSuccessItem(
+                                it
+                            )
                         } else {
-                            val io = ConfigCenter.IO
-                            task.scheduleModule.add(io)
-                            if (io.writeFile(it.path, this, it.md5)
-                            ) {
-                                downLoadCount--
-                                ULog.i(
-                                        "$it 11111下载成功"
-                                )
-                                task.uTask.successTasks.addSuccessItem(
-                                        it
-                                )
-                            } else {
-                                downLoadCount--
-                                ULog.i("$it 11111下载失败")
-                                task.uTask.failedTasks.add(it)
-                            }
+                            downLoadCount--
+                            ULog.i("$it 11111下载失败")
+                            task.uTask.failedTasks.add(it)
                         }
-                        ULog.i("有结束了的，总数 ${task.uTask.downloadQueue.size}, 成功数 ${task.uTask.successTasks.size}, 失败数 ${task.uTask.failedTasks.size}")
-                        finishTaskIfNeeded(task)
                     }
+                    ULog.i("有结束了的，总数 ${task.uTask.downloadQueue.size}, 成功数 ${task.uTask.successTasks.size}, 失败数 ${task.uTask.failedTasks.size}")
+                    finishTaskIfNeeded(task)
+                }
         }
     }
 
     @Synchronized
     private fun finishTaskIfNeeded(
-            uInternalTask: UInternalTask): Boolean {
+        uInternalTask: UInternalTask
+    ): Boolean {
         if (uInternalTask.uTask.downloadQueue.size == uInternalTask.uTask.successTasks.size + uInternalTask.uTask.failedTasks.size) {
             if (!retryTaskIfNeeded(uInternalTask)) {
                 uInternalTask.scheduleModule.stop()
                 switchUiThreadIfNeeded {
-                    uInternalTask.uTask.downloadFinishListener(uInternalTask.uTask.downloadQueue,
-                            uInternalTask.uTask.successTasks, uInternalTask.uTask.failedTasks)
+                    uInternalTask.uTask.downloadFinishListener(
+                        uInternalTask.uTask.downloadQueue,
+                        uInternalTask.uTask.successTasks, uInternalTask.uTask.failedTasks
+                    )
                 }
                 switchUiThreadIfNeeded {
                     //下载完成
@@ -202,14 +211,15 @@ class DownloadManager private constructor() {
 }
 
 data class UInternalTask(
-        val uTask: UTask,
-        var notification: Notification? = null,
-        val downloadFinish: (UInternalTask) -> Unit = {},
-        var notificationId: Int? = null,
-        val scheduleModule: DownloadScheduleModule = DownloadScheduleModule(),
-        val downloadPool: ExecutorService = Executors.newFixedThreadPool(
-                ConfigCenter.THREAD_COUNT,
-                DOWNLOAD_POOL_THREAD_FACTORY
-        ),
-        var retry: Boolean = false
+    val uTask: UTask,
+    var notification: Notification? = null,
+    val downloadFinish: (UInternalTask) -> Unit = {},
+    var io: AbIoManager? = null,
+    var notificationId: Int? = null,
+    val scheduleModule: DownloadScheduleModule = DownloadScheduleModule(),
+    val downloadPool: ExecutorService = Executors.newFixedThreadPool(
+        ConfigCenter.THREAD_COUNT,
+        DOWNLOAD_POOL_THREAD_FACTORY
+    ),
+    var retry: Boolean = false
 )

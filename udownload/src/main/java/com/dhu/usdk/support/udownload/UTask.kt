@@ -14,14 +14,17 @@ import kotlin.collections.ArrayList
 var taskIndex = 0
 
 class UTask(
-        val isShowNotification: Boolean = true,
-        val name: String = taskIndex++.toString()
+    val isShowNotification: Boolean = true,
+    val name: String = taskIndex++.toString()
 ) {
     private var isStart = false
     val downloadQueue = ConcurrentLinkedQueue<Item>()
     val pendingQueue = ConcurrentLinkedQueue<Item>()
     val successTasks = SuccessTasks(this)
     val failedTasks = ConcurrentLinkedQueue<Item>()
+    var state: State? = null
+
+    private val itemLock = Object()
 
     /**
      * 下载进度
@@ -42,7 +45,8 @@ class UTask(
      * params 2 -> 下载成功 list
      * params 3 -> 下载失败 list
      */
-    var downloadFinishListener = { _: Collection<Item>, _: Collection<Item>, _: Collection<Item> -> }
+    var downloadFinishListener =
+        { _: Collection<Item>, _: Collection<Item>, _: Collection<Item> -> }
 
     /**
      * 下载状态改变
@@ -106,13 +110,20 @@ class UTask(
     fun stop(context: Context) {
 
     }
+
+    fun lockItemTaskIfNeeded() {
+        if (state == State.ON_PAUSE) {
+            itemLock.wait()
+        }
+    }
 }
 
 enum class State(value: Int) {
     READY(1), DOWNLOADING(2), ON_PAUSE(3), ON_STOP(4), CELLULAR_PAUSE(5), ON_FINISH(6), SUCCESS(
-            0),
+        0
+    ),
     FAILED(
-            -1
+        -1
     )
 }
 
@@ -123,10 +134,10 @@ enum class State(value: Int) {
  * size -> 文件大小，单位 byte
  */
 data class Item(
-        val url: String,
-        val path: String,
-        var md5: String,
-        val size: Long
+    val url: String,
+    val path: String,
+    var md5: String,
+    val size: Long
 ) {
     //重复的 item ，必须是 url 和 path 相同
     val duplicateItem = ArrayList<Item>()

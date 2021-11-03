@@ -52,7 +52,7 @@ class MainActivity : AppCompatActivity() {
                     Gson().fromJson(result, RootData::class.java)
                 var aIndex = 0
                 var bIndex = 0
-                UTask(false, "test").apply {
+                UTask(true, "test").apply {
                     data.manifiest.forEach {
                         if (aIndex >= 400) {
                             return@apply

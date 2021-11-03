@@ -1,5 +1,6 @@
 package com.dhu.usdk.support.udownload.modules
 
+import com.dhu.usdk.support.udownload.modules.download.UInternalTask
 import com.dhu.usdk.support.udownload.support.io.AbIoManager
 import com.dhu.usdk.support.udownload.support.io.RandomAccessFileManager
 import com.dhu.usdk.support.udownload.support.network.IHttpDownload
@@ -14,5 +15,5 @@ object ConfigCenter {
 
     val HTTP: IHttpDownload get() = OkhttpFactory()
 
-    val IO: AbIoManager get() = RandomAccessFileManager()
+    fun getIO(uInternalTask: UInternalTask): AbIoManager = RandomAccessFileManager(uInternalTask)
 }
