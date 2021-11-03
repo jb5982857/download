@@ -15,6 +15,7 @@ import com.dhu.usdk.support.udownload.support.thread.TASK_POOL
 import com.dhu.usdk.support.udownload.utils.ULog
 import com.dhu.usdk.support.udownload.utils.application
 import com.dhu.usdk.support.udownload.utils.mainHandler
+import com.dhu.usdk.support.udownload.utils.switchUiThreadIfNeeded
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -68,6 +69,9 @@ class DownloadManager private constructor() {
     private fun startTask() {
         val task = taskManager.next()
         ULog.d("task $task 开始了")
+        switchUiThreadIfNeeded {
+            task.uTask.downloadStateChangeListener(State.DOWNLOADING)
+        }
         GlobalScope.launch {
             withContext(Dispatchers.IO) {
                 var successLen = 0L
@@ -99,7 +103,7 @@ class DownloadManager private constructor() {
                 task.scheduleModule.init(
                         successLen,
                         totalLen,
-                        task.notificationId
+                        task.notificationId, task.uTask
                 )
 
                 task.uTask.pendingQueue.addAll(task.uTask.downloadQueue)
@@ -160,11 +164,18 @@ class DownloadManager private constructor() {
         if (uInternalTask.uTask.downloadQueue.size == uInternalTask.uTask.successTasks.size + uInternalTask.uTask.failedTasks.size) {
             if (!retryTaskIfNeeded(uInternalTask)) {
                 uInternalTask.scheduleModule.stop()
-                mainHandler.post {
+                switchUiThreadIfNeeded {
+                    uInternalTask.uTask.downloadFinishListener(uInternalTask.uTask.downloadQueue,
+                            uInternalTask.uTask.successTasks, uInternalTask.uTask.failedTasks)
+                }
+                switchUiThreadIfNeeded {
                     //下载完成
                     uInternalTask.downloadFinish(uInternalTask)
                 }
                 launchNextTasks()
+                switchUiThreadIfNeeded {
+                    uInternalTask.uTask.downloadStateChangeListener(State.ON_FINISH)
+                }
                 return true
             } else {
                 return false
@@ -193,7 +204,7 @@ class DownloadManager private constructor() {
 data class UInternalTask(
         val uTask: UTask,
         var notification: Notification? = null,
-        var downloadFinish: (UInternalTask) -> Unit = {},
+        val downloadFinish: (UInternalTask) -> Unit = {},
         var notificationId: Int = NotificationModule.DEFAULT_ID,
         val scheduleModule: DownloadScheduleModule = DownloadScheduleModule(),
         val downloadPool: ExecutorService = Executors.newFixedThreadPool(

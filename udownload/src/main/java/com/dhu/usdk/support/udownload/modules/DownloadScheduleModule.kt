@@ -4,10 +4,9 @@ import android.content.Context
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.Message
+import com.dhu.usdk.support.udownload.UTask
 import com.dhu.usdk.support.udownload.support.io.AbIoManager
-import com.dhu.usdk.support.udownload.utils.ULog
-import com.dhu.usdk.support.udownload.utils.decimalFormat
-import com.dhu.usdk.support.udownload.utils.getSpeed
+import com.dhu.usdk.support.udownload.utils.*
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.collections.ArrayList
@@ -29,6 +28,7 @@ class DownloadScheduleModule() {
     private var successLen: Long = 0L
     private var totalLen: Long = 0L
     private var notificationId: Int? = null
+    private var task: UTask? = null
 
     companion object {
         const val DELAY_TIME = 1_000L
@@ -37,11 +37,12 @@ class DownloadScheduleModule() {
         const val WHAT_STOP = 40
     }
 
-    fun init(successLen: Long, totalLen: Long, notificationId: Int?) {
+    fun init(successLen: Long, totalLen: Long, notificationId: Int?, task: UTask) {
         ULog.d("init success $successLen, total $totalLen")
         this.successLen = successLen
         this.totalLen = totalLen
         this.notificationId = notificationId
+        this.task = task
     }
 
     fun start(context: Context) {
@@ -73,18 +74,28 @@ class DownloadScheduleModule() {
                         return@Handler true
                     }
 
+                    val speed = getSpeed(
+                        successLen - lastSuccessLen,
+                        (DELAY_TIME / 1000).toInt()
+                    )
                     notificationId?.apply {
                         val progress = successLen.toFloat() * 100 / totalLen
                         NotificationModule.updateProgress(
                             context,
                             this,
-                            progress.toInt(), "下载进度 ${decimalFormat.format(progress)}% , 下载速度 ${
-                                getSpeed(
-                                    successLen - lastSuccessLen,
-                                    (DELAY_TIME / 1000).toInt()
-                                )
-                            }"
+                            progress.toInt(),
+                            "下载进度 ${decimalFormat.format(progress)}% , 下载速度 ${speed}"
                         )
+                    }
+                    switchUiThreadIfNeeded {
+                        //回调速度
+                        task?.downloadProgressListener?.let { it1 ->
+                            it1(
+                                totalLen,
+                                successLen,
+                                speed
+                            )
+                        }
                     }
                     needRemoveManagers.forEach {
                         ioManagers.remove(it)

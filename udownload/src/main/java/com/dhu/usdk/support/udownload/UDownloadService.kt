@@ -16,6 +16,9 @@ class UDownloadService : Service() {
         const val ACTION = "action"
         const val TASK = "task"
 
+        @Volatile
+        var isAlive = false
+
         fun add(context: Context, uTask: UTask) {
             val intent = Intent(context, UDownloadService::class.java).apply {
                 putExtra(ACTION, Action.ADD.value)
@@ -39,8 +42,9 @@ class UDownloadService : Service() {
         }
 
         val uTask = ObjectWrapperForBinder.getData(intent.getBundleExtra(TASK)) as UTask?
-
-        wakeLock.acquire(10 * 60 * 1000L /*10 minutes*/)
+        if (!wakeLock.isHeld) {
+            wakeLock.acquire(10 * 60 * 1000L /*10 minutes*/)
+        }
         when (intent.getIntExtra(ACTION, Action.NONE.value)) {
             Action.NONE.value -> {
 
@@ -64,6 +68,7 @@ class UDownloadService : Service() {
                     })
                     uInternalTask.notification = NotificationModule.createNotification(
                             this@UDownloadService)
+                    isAlive = true
                     uInternalTask.notificationId =
                             NotificationModule.showForegroundService(this@UDownloadService,
                                     uInternalTask.notification!!)
@@ -95,7 +100,10 @@ class UDownloadService : Service() {
     private fun removeNotification(id: Int) {
         val lastExistNotification = NotificationModule.remove(id)
         NotificationModule.removeNotification(id)
-        lastExistNotification ?: stopSelf()
+        if (lastExistNotification == null) {
+            stopSelf()
+            isAlive = false
+        }
         lastExistNotification?.apply {
             startForeground(this.id, this.notification)
         }

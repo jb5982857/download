@@ -13,6 +13,7 @@ import com.dhu.usdk.support.udownload.Item
 import com.dhu.usdk.support.udownload.UTask
 import com.dhu.usdk.support.udownload.utils.MD5Util
 import com.dhu.usdk.support.udownload.utils.ULog
+import kotlinx.android.synthetic.main.activity_main.*
 import java.io.File
 import java.io.IOException
 
@@ -22,6 +23,7 @@ class MainActivity : AppCompatActivity() {
         const val URL = "https://inner-cdn.dhgames.cn:12345/ih/9f5d08bd16083e796a6c7ff933613442"
         const val TEST_URL =
                 "https://inner-cdn.dhgames.cn:12345/ih/76ff3a21d4ddb5a557fd2872785c9bae"
+        const val TAG = "MainActivity"
     }
 
     private lateinit var dirPath: String
@@ -63,24 +65,41 @@ class MainActivity : AppCompatActivity() {
                                 )
                         )
                     }
-                }.start(this@MainActivity)
-
-                UTask(true, "test2").apply {
-                    data.manifiest.forEach {
-                        if (bIndex >= 80) {
-                            return@apply
-                        }
-                        bIndex++
-                        add(
-                                Item(
-                                        "https://inner-cdn.dhgames.cn:12345/ih/${it.md5}",
-                                        applicationContext.getExternalFilesDir("")
-                                                ?.getAbsolutePath() + "/udownload1/" + it.path,
-                                        it.md5, it.size
-                                )
-                        )
+                }.apply {
+                    downloadFinishListener = { tasks: Collection<Item>, successTasks: Collection<Item>, failedTasks: Collection<Item> ->
+                        appendResult(
+                                "下载结束了 总数${tasks.size} , 成功数${successTasks.size} , 失败数${failedTasks.size}")
                     }
-                }.start(this@MainActivity)
+                    downloadItemFinishListener = {
+                        appendResult("item ${it.url} 下载完成")
+                    }
+                    downloadProgressListener = { totalBytes: Long, finishBytes: Long, speed: String ->
+                        appendResult("下载进度，总大小 $totalBytes ，已经完成的大小 $finishBytes , 当前速度 $speed")
+                    }
+                    downloadStateChangeListener = {
+                        appendResult("状态变化 $it")
+                    }
+                    start(this@MainActivity)
+                }
+
+//                UTask(true, "test2").apply {
+//                    data.manifiest.forEach {
+//                        if (bIndex >= 80) {
+//                            return@apply
+//                        }
+//                        bIndex++
+//                        add(
+//                                Item(
+//                                        "https://inner-cdn.dhgames.cn:12345/ih/${it.md5}",
+//                                        applicationContext.getExternalFilesDir("")
+//                                                ?.getAbsolutePath() + "/udownload1/" + it.path,
+//                                        it.md5, it.size
+//                                )
+//                        )
+//                    }
+//                }.apply {
+//                    start(this@MainActivity)
+//                }
             }
         })
     }
@@ -124,6 +143,11 @@ class MainActivity : AppCompatActivity() {
         } else {
             file.delete()
         }
+    }
+
+    private fun appendResult(msg: String) {
+        Log.d(TAG, msg)
+        tv_log.text = "$msg\n\n${tv_log.text}"
     }
 
 }

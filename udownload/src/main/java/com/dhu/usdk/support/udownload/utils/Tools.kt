@@ -10,8 +10,8 @@ val mainHandler = Handler(Looper.getMainLooper())
 val application by lazy {
     try {
         return@lazy Class.forName("android.app.ActivityThread")
-                .getMethod("currentApplication")
-                .invoke(null) as Application
+            .getMethod("currentApplication")
+            .invoke(null) as Application
     } catch (e: Exception) {
         e.printStackTrace();
     }
@@ -39,4 +39,13 @@ fun getSpeed(size: Long, time: Int): String {
     }
 
     return "${decimalFormat.format(size.toFloat() / time)} b/s"
+}
+
+
+fun switchUiThreadIfNeeded(action: () -> Unit) {
+    if (Looper.myLooper() == Looper.getMainLooper()) {
+        action()
+    } else {
+        mainHandler.post { action() }
+    }
 }

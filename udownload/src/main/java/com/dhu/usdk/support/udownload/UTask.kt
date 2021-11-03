@@ -1,8 +1,11 @@
 package com.dhu.usdk.support.udownload
 
 import android.content.Context
+import com.dhu.usdk.support.udownload.modules.download.DownloadManager
+import com.dhu.usdk.support.udownload.modules.download.UInternalTask
 import com.dhu.usdk.support.udownload.support.queue.SuccessTasks
 import com.dhu.usdk.support.udownload.utils.ULog
+import com.dhu.usdk.support.udownload.utils.switchUiThreadIfNeeded
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.collections.ArrayList
@@ -17,7 +20,7 @@ class UTask(
     private var isStart = false
     val downloadQueue = ConcurrentLinkedQueue<Item>()
     val pendingQueue = ConcurrentLinkedQueue<Item>()
-    val successTasks = SuccessTasks()
+    val successTasks = SuccessTasks(this)
     val failedTasks = ConcurrentLinkedQueue<Item>()
 
     /**
@@ -26,7 +29,7 @@ class UTask(
      * params 2 -> 已下载完成的大小，单位 byte
      * params 3 -> 当前速度，根据实际情况转换 kb/s , Mb/s , b/s
      */
-    var downloadProgressListener = { _: Long, _: Long, _: Float -> }
+    var downloadProgressListener = { _: Long, _: Long, _: String -> }
 
     /**
      * 有文件下载完成，由这里同步
@@ -39,7 +42,7 @@ class UTask(
      * params 2 -> 下载成功 list
      * params 3 -> 下载失败 list
      */
-    var downloadFinishListener = { _: List<Item>, _: List<Item>, _: List<Item> -> }
+    var downloadFinishListener = { _: Collection<Item>, _: Collection<Item>, _: Collection<Item> -> }
 
     /**
      * 下载状态改变
@@ -79,9 +82,16 @@ class UTask(
             return
         }
         ULog.i("开始下载，文件数 ${downloadQueue.size}")
+        switchUiThreadIfNeeded {
+            downloadStateChangeListener(State.READY)
+        }
+        if (isShowNotification) {
+            UDownloadService.add(context, this)
+        } else {
+            DownloadManager.instance.add(UInternalTask(this, downloadFinish = {
 
-        downloadStateChangeListener(State.READY)
-        UDownloadService.add(context, this)
+            }))
+        }
         isStart = true
     }
 
