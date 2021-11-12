@@ -40,6 +40,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun btDownload(view: View) {
+        var successCount = 0
+        var totalCount = 0
         val request = Request.Builder()
             .url(URL)
             .build()
@@ -55,10 +57,11 @@ class MainActivity : AppCompatActivity() {
                 var aIndex = 0
                 var bIndex = 0
                 uTask = UTask(true, "test").apply {
+                    totalCount = data.manifiest.size
                     data.manifiest.forEach {
-                        if (aIndex >= 400) {
-                            return@apply
-                        }
+//                        if (aIndex >= 400) {
+//                            return@apply
+//                        }
                         aIndex++
                         add(
                             Item(
@@ -73,16 +76,24 @@ class MainActivity : AppCompatActivity() {
                             appendResult(
                                 "下载结束了 总数${tasks.size} , 成功数${successTasks.size} , 失败数${failedTasks.size}"
                             )
+
                         }
                     downloadItemFinishListener = {
-                        appendResult("item ${it.url} 下载完成")
+//                        appendResult("item ${it.url} 下载完成")
+                        successCount++
+                        tv_progress.text = "下载完成数 $successCount, 总数 $totalCount"
                     }
                     downloadProgressListener =
                         { totalBytes: Long, finishBytes: Long, speed: String ->
-                            appendResult("下载进度，总大小 $totalBytes ，已经完成的大小 $finishBytes , 进度 ${finishBytes / totalBytes.toFloat()} , 当前速度 $speed")
+//                            appendResult("下载进度，总大小 $totalBytes ，已经完成的大小 $finishBytes , 进度 ${finishBytes / totalBytes.toFloat()} , 当前速度 $speed")
+                            pb_progress.progress =
+                                (finishBytes / totalBytes.toFloat() * 100).toInt()
+                            tv_speed.text = "当前速度 $speed"
                         }
                     downloadStateChangeListener = {
-                        appendResult("状态变化 $it")
+//                        appendResult("状态变化 $it")
+                        tv_state.text = "状态 ${it.name}"
+
                     }
                     start(this@MainActivity)
                 }
@@ -160,7 +171,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun appendResult(msg: String) {
         Log.d(TAG, msg)
-        tv_log.text = "$msg\n\n${tv_log.text}"
     }
 
 }

@@ -1,12 +1,13 @@
 package com.dhu.usdk.support.udownload.support.io
 
 import com.dh.usdk.support.uokio.Okio
+import com.dhu.usdk.support.udownload.Item
 import com.dhu.usdk.support.udownload.modules.download.UInternalTask
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
 
-class OkioManager(uInternalTask: UInternalTask) : AbIoManager(uInternalTask) {
+class OkioManager(item: Item) : AbIoManager(item) {
 
     override fun saveFile(filePath: String, inputStream: InputStream): Boolean {
         try {

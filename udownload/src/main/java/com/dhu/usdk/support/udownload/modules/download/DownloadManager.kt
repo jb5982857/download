@@ -53,7 +53,6 @@ class DownloadManager private constructor() {
     @Volatile
     var downLoadCount = 0
     fun add(uInternalTask: UInternalTask) {
-        uInternalTask.io = getIO(uInternalTask)
         taskManager.addTask(uInternalTask)
     }
 
@@ -75,6 +74,7 @@ class DownloadManager private constructor() {
         switchUiThreadIfNeeded {
             task.uTask.downloadStateChangeListener(State.DOWNLOADING)
         }
+
         GlobalScope.launch {
             withContext(Dispatchers.IO) {
                 var successLen = 0L
@@ -88,7 +88,7 @@ class DownloadManager private constructor() {
                         return@forEach
                     }
                     //检查本地是否存在同名文件，并且 md5 是否一致
-                    val fileCheckData = task.io!!.checkFileIfExist(
+                    val fileCheckData = it.ioManager.checkFileIfExist(
                         it.path,
                         it.md5
                     )
@@ -133,7 +133,7 @@ class DownloadManager private constructor() {
             task.uTask.lockItemTaskIfNeeded()
             ConfigCenter.HTTP.download(
                 it.url,
-                task.io!!.getTempFileSize(it.path)
+                it.ioManager.getTempFileSize(it.path)
             )
                 .apply {
                     task.uTask.lockItemTaskIfNeeded()
@@ -142,8 +142,8 @@ class DownloadManager private constructor() {
                         ULog.i("$it 11111下载失败 null")
                         task.uTask.failedTasks.add(it)
                     } else {
-                        task.scheduleModule.add(task.io!!)
-                        if (task.io!!.writeFile(it.path, this, it.md5)
+                        task.scheduleModule.add(it.ioManager)
+                        if (it.ioManager.writeFile(it.path, this, it.md5)
                         ) {
                             downLoadCount--
                             ULog.i(
@@ -214,7 +214,6 @@ data class UInternalTask(
     val uTask: UTask,
     var notification: Notification? = null,
     val downloadFinish: (UInternalTask) -> Unit = {},
-    var io: AbIoManager? = null,
     var notificationId: Int? = null,
     val scheduleModule: DownloadScheduleModule = DownloadScheduleModule(),
     val downloadPool: ExecutorService = Executors.newFixedThreadPool(

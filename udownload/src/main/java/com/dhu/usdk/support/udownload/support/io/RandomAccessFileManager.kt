@@ -1,11 +1,12 @@
 package com.dhu.usdk.support.udownload.support.io
 
+import com.dhu.usdk.support.udownload.Item
 import com.dhu.usdk.support.udownload.modules.download.UInternalTask
 import com.dhu.usdk.support.udownload.utils.ULog
 import java.io.*
 
-class RandomAccessFileManager(uInternalTask: UInternalTask) :
-    AbIoManager(uInternalTask) {
+class RandomAccessFileManager(item: Item) :
+    AbIoManager(item) {
     override fun saveFile(filePath: String, inputStream: InputStream): Boolean {
         var raf: RandomAccessFile? = null
         try {

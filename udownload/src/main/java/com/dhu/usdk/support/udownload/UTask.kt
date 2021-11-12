@@ -1,8 +1,10 @@
 package com.dhu.usdk.support.udownload
 
 import android.content.Context
+import com.dhu.usdk.support.udownload.modules.ConfigCenter
 import com.dhu.usdk.support.udownload.modules.download.DownloadManager
 import com.dhu.usdk.support.udownload.modules.download.UInternalTask
+import com.dhu.usdk.support.udownload.support.io.AbIoManager
 import com.dhu.usdk.support.udownload.support.queue.SuccessTasks
 import com.dhu.usdk.support.udownload.utils.ULog
 import com.dhu.usdk.support.udownload.utils.switchUiThreadIfNeeded
@@ -74,6 +76,7 @@ class UTask(
             }
         }
         item.md5 = item.md5.toLowerCase(Locale.ROOT)
+        item.task = this
         downloadQueue.add(item)
         return this
     }
@@ -150,6 +153,12 @@ data class Item(
 ) {
     //重复的 item ，必须是 url 和 path 相同
     val duplicateItem = ArrayList<Item>()
+
+    //绑定自己所属的 task
+    lateinit var task: UTask
+
+    //绑定自己的 io 管理器
+    val ioManager: AbIoManager = ConfigCenter.getIO(this)
 
     //该条下载的状态
     var state = State.READY
