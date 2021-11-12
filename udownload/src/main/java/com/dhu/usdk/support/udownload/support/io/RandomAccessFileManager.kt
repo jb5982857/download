@@ -1,11 +1,11 @@
 package com.dhu.usdk.support.udownload.support.io
 
-import com.dhu.usdk.support.udownload.UTask
 import com.dhu.usdk.support.udownload.modules.download.UInternalTask
 import com.dhu.usdk.support.udownload.utils.ULog
 import java.io.*
 
-class RandomAccessFileManager(private val uInternalTask: UInternalTask) : AbIoManager() {
+class RandomAccessFileManager(uInternalTask: UInternalTask) :
+    AbIoManager(uInternalTask) {
     override fun saveFile(filePath: String, inputStream: InputStream): Boolean {
         var raf: RandomAccessFile? = null
         try {
@@ -20,6 +20,7 @@ class RandomAccessFileManager(private val uInternalTask: UInternalTask) : AbIoMa
                 } != -1) {
                 raf.write(buffer, 0, len)
                 bufferLen += len
+                lockItemTaskIfNeeded()
             }
         } catch (e: FileNotFoundException) {
             e.printStackTrace()

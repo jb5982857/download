@@ -100,11 +100,16 @@ class UTask(
     }
 
     fun restart(context: Context) {
-
+        state = State.DOWNLOADING
+        synchronized(itemLock) {
+            itemLock.notifyAll()
+        }
+        downloadStateChangeListener(State.DOWNLOADING)
     }
 
     fun pause(context: Context) {
-
+        state = State.ON_PAUSE
+        downloadStateChangeListener(State.ON_PAUSE)
     }
 
     fun stop(context: Context) {
@@ -113,7 +118,11 @@ class UTask(
 
     fun lockItemTaskIfNeeded() {
         if (state == State.ON_PAUSE) {
-            itemLock.wait()
+            synchronized(itemLock) {
+                if (state == State.ON_PAUSE) {
+                    itemLock.wait()
+                }
+            }
         }
     }
 }

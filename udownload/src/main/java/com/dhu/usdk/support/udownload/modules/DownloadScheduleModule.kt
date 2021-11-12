@@ -84,7 +84,7 @@ class DownloadScheduleModule() {
                             context,
                             this,
                             progress.toInt(),
-                            "下载进度 ${decimalFormat.format(progress)}% , 下载速度 ${speed}"
+                            "下载进度 ${decimalFormat.format(progress)}% , 下载速度 $speed"
                         )
                     }
                     switchUiThreadIfNeeded {
@@ -101,6 +101,7 @@ class DownloadScheduleModule() {
                         ioManagers.remove(it)
                     }
                     if (isStart) {
+                        task?.lockItemTaskIfNeeded()
                         mHandler?.sendEmptyMessageDelayed(WHAT_SCHEDULE, DELAY_TIME)
                     }
                 }

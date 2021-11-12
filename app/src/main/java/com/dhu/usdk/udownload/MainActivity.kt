@@ -28,6 +28,8 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var dirPath: String
 
+    private var uTask: UTask? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -52,7 +54,7 @@ class MainActivity : AppCompatActivity() {
                     Gson().fromJson(result, RootData::class.java)
                 var aIndex = 0
                 var bIndex = 0
-                UTask(true, "test").apply {
+                uTask = UTask(true, "test").apply {
                     data.manifiest.forEach {
                         if (aIndex >= 400) {
                             return@apply
@@ -122,15 +124,17 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    fun btHttp(view: View) {
-        Thread {
-            val request = Request.Builder()
-                .addHeader("Range", "bytes=0-")
-                .url(TEST_URL)
-                .build()
-            val ins = OkHttpClient.Builder().build().newCall(request).execute().body()?.byteStream()
-            ULog.d("test http log , $ins")
-        }.start()
+    fun btPause(view: View) {
+        uTask?.pause(this)
+    }
+
+    fun btRestart(view: View) {
+        uTask?.restart(this)
+    }
+
+
+    fun btStop(view: View) {
+        uTask?.stop(this)
     }
 
     fun btClear(view: View) {

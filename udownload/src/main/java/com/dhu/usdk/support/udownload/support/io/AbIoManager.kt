@@ -1,5 +1,6 @@
 package com.dhu.usdk.support.udownload.support.io
 
+import com.dhu.usdk.support.udownload.modules.download.UInternalTask
 import com.dhu.usdk.support.udownload.utils.ULog
 import com.dhu.usdk.support.udownload.utils.md5
 import com.dhu.usdk.support.udownload.utils.moveData
@@ -9,7 +10,7 @@ import java.io.File
 import java.io.InputStream
 import java.util.*
 
-abstract class AbIoManager {
+abstract class AbIoManager(private val uInternalTask: UInternalTask) {
     //是否完成到本地的写入
     var isWriteFinish = false
 
@@ -86,6 +87,10 @@ abstract class AbIoManager {
         } else {
             0L
         }
+    }
+
+    protected fun lockItemTaskIfNeeded() {
+        uInternalTask.uTask.lockItemTaskIfNeeded()
     }
 
     abstract fun saveFile(filePath: String, inputStream: InputStream): Boolean

@@ -29,15 +29,27 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <Button
-        android:id="@+id/bt_http"
+        android:id="@+id/bt_pause"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="36dp"
-        android:onClick="btHttp"
-        android:text="进行 http"
+        android:onClick="btPause"
+        android:text="暂停"
         app:layout_constraintBottom_toBottomOf="@+id/bt_download"
         app:layout_constraintStart_toEndOf="@+id/bt_download"
         app:layout_constraintTop_toTopOf="@+id/bt_download"
+        app:layout_constraintVertical_bias="0.0" />
+
+    <Button
+        android:id="@+id/bt_restart"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:onClick="btRestart"
+        android:text="恢复"
+        app:layout_constraintBottom_toBottomOf="@+id/bt_clear_notification"
+        app:layout_constraintStart_toEndOf="@+id/bt_clear_notification"
+        app:layout_constraintTop_toTopOf="@+id/bt_clear_notification"
         app:layout_constraintVertical_bias="0.0" />
 
     <Button
@@ -64,6 +76,7 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <ScrollView
+        android:id="@+id/scrollView2"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_marginTop="150dp"
