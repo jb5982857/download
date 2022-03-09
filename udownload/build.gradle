@@ -41,6 +41,7 @@ dependencies {
 
     implementation "com.dhgames.usdk.plugins:ugson:2.8"
     implementation "com.dhgames.usdk.plugins:uokhttp:3.14.9.11"
+    implementation "com.dhgames.usdk.plugins:upermission:1.2.2"
 //    implementation("com.squareup.okhttp3:okhttp:3.14.9")
 //    implementation("com.squareup.okhttp3:logging-interceptor:3.14.9")
     implementation "com.dhgames.usdk.plugins:uokhttp-log-interceptor:4.0.0"

@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.Message
+import com.dhu.usdk.support.udownload.UDownloadService
 import com.dhu.usdk.support.udownload.UTask
 import com.dhu.usdk.support.udownload.support.io.AbIoManager
 import com.dhu.usdk.support.udownload.utils.*
@@ -54,6 +55,9 @@ class DownloadScheduleModule() {
         isStart = true
 
         mHandler = Handler(downloadHandlerThread.looper) {
+            if (!UDownloadService.isAlive) {
+                return@Handler true
+            }
             when (it.what) {
                 WHAT_ADD -> {
                     if (it.obj is AbIoManager) {

@@ -1,5 +1,6 @@
 package com.dhu.usdk.support.udownload
 
+import android.app.Activity
 import android.content.Context
 import com.dhu.usdk.support.udownload.modules.ConfigCenter
 import com.dhu.usdk.support.udownload.modules.download.DownloadManager
@@ -81,7 +82,7 @@ class UTask(
         return this
     }
 
-    fun start(context: Context) {
+    fun start(activity: Activity) {
         if (isStart) {
             "the task $name is started".apply {
                 ULog.w(this)
@@ -93,7 +94,7 @@ class UTask(
             downloadStateChangeListener(State.READY)
         }
         if (isShowNotification) {
-            UDownloadService.add(context, this)
+            UDownloadService.add(activity, this)
         } else {
             DownloadManager.instance.add(UInternalTask(this, downloadFinish = {
 
@@ -102,7 +103,7 @@ class UTask(
         isStart = true
     }
 
-    fun restart(context: Context) {
+    fun restart() {
         state = State.DOWNLOADING
         synchronized(itemLock) {
             itemLock.notifyAll()
@@ -110,13 +111,23 @@ class UTask(
         downloadStateChangeListener(State.DOWNLOADING)
     }
 
-    fun pause(context: Context) {
+    fun pause() {
         state = State.ON_PAUSE
         downloadStateChangeListener(State.ON_PAUSE)
     }
 
-    fun stop(context: Context) {
+    fun pauseOrResume() {
+        if (state == State.ON_PAUSE) {
+            restart()
+        } else {
+            pause()
+        }
+    }
 
+    fun stop(context: Context) {
+        if (isShowNotification) {
+
+        }
     }
 
     fun lockItemTaskIfNeeded() {

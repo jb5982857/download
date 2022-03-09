@@ -1,7 +1,10 @@
 package com.dhu.usdk.support.udownload.support.io
 
 import com.dhu.usdk.support.udownload.Item
+import com.dhu.usdk.support.udownload.UDownloadService
+import com.dhu.usdk.support.udownload.modules.ReportModule
 import com.dhu.usdk.support.udownload.utils.ULog
+import com.dhu.usdk.support.udownload.utils.application
 import com.dhu.usdk.support.udownload.utils.md5
 import com.dhu.usdk.support.udownload.utils.moveData
 import kotlinx.coroutines.Dispatchers
@@ -93,6 +96,8 @@ abstract class AbIoManager(private val item: Item) {
     }
 
     protected fun lockItemTaskIfNeeded() {
+        UDownloadService.keepAlive(application)
+        ReportModule.instance.report("downloading")
         item.task.lockItemTaskIfNeeded()
     }
 

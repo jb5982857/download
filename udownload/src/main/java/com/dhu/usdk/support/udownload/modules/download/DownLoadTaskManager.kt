@@ -11,16 +11,20 @@ class DownLoadTaskManager {
             while (downloadTasks.isEmpty()) {
                 lock.wait()
             }
+            return downloadTasks.poll()!!
         }
 
-        return downloadTasks.poll()
     }
 
 
     fun addTask(task: UInternalTask) {
         synchronized(lock) {
             downloadTasks.add(task)
-            lock.notify()
+            lock.notifyAll()
         }
+    }
+
+    fun releaseData() {
+        downloadTasks.clear()
     }
 }

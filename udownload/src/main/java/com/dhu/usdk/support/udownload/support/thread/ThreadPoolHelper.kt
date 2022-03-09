@@ -17,3 +17,8 @@ fun threadFactory(name: String?, daemon: Boolean): ThreadFactory {
         result
     }
 }
+
+val DOWNLOAD_POOL: ExecutorService = Executors.newFixedThreadPool(
+    ConfigCenter.THREAD_COUNT,
+    DOWNLOAD_POOL_THREAD_FACTORY
+)

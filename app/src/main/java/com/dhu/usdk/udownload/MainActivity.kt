@@ -23,6 +23,8 @@ class MainActivity : AppCompatActivity() {
         const val URL = "https://inner-cdn.dhgames.cn:12345/ih/9f5d08bd16083e796a6c7ff933613442"
         const val TEST_URL =
             "https://inner-cdn.dhgames.cn:12345/ih/76ff3a21d4ddb5a557fd2872785c9bae"
+        const val QQ_URL =
+            "https://a611d7d2daae8560f1b0905407fcba8d.dlied1.cdntips.net/dlied1.qq.com/qqweb/QQ_1/android_apk/Android_8.8.50.6735_537101929.32.HB2.apk?mkey=61a70b81b69630c8&f=0000&cip=182.150.22.61&proto=https&access_type="
         const val TAG = "MainActivity"
     }
 
@@ -37,6 +39,21 @@ class MainActivity : AppCompatActivity() {
         dirPath =
             applicationContext.getExternalFilesDir("")?.getAbsolutePath() + "/udownload/"
 
+    }
+
+    fun btBigFileDownload(view: View) {
+        UTask(true, "bigFile").apply {
+            add(
+                Item(
+                    QQ_URL,
+                    applicationContext.getExternalFilesDir("")
+                        ?.absolutePath + "/udownload2/qq.apk",
+                    "3975e6512672dd620ff716f3b2a788a4", 158351948
+                )
+            )
+        }.apply {
+            start(this@MainActivity)
+        }
     }
 
     fun btDownload(view: View) {
@@ -98,24 +115,24 @@ class MainActivity : AppCompatActivity() {
                     start(this@MainActivity)
                 }
 
-//                UTask(true, "test2").apply {
-//                    data.manifiest.forEach {
-//                        if (bIndex >= 80) {
-//                            return@apply
-//                        }
-//                        bIndex++
-//                        add(
-//                                Item(
-//                                        "https://inner-cdn.dhgames.cn:12345/ih/${it.md5}",
-//                                        applicationContext.getExternalFilesDir("")
-//                                                ?.getAbsolutePath() + "/udownload1/" + it.path,
-//                                        it.md5, it.size
-//                                )
-//                        )
-//                    }
-//                }.apply {
-//                    start(this@MainActivity)
-//                }
+                UTask(true, "test2").apply {
+                    data.manifiest.forEach {
+                        if (bIndex >= 80) {
+                            return@apply
+                        }
+                        bIndex++
+                        add(
+                            Item(
+                                "https://inner-cdn.dhgames.cn:12345/ih/${it.md5}",
+                                applicationContext.getExternalFilesDir("")
+                                    ?.getAbsolutePath() + "/udownload1/" + it.path,
+                                it.md5, it.size
+                            )
+                        )
+                    }
+                }.apply {
+                    start(this@MainActivity)
+                }
             }
         })
     }
@@ -136,11 +153,11 @@ class MainActivity : AppCompatActivity() {
 
 
     fun btPause(view: View) {
-        uTask?.pause(this)
+        uTask?.pause()
     }
 
     fun btRestart(view: View) {
-        uTask?.restart(this)
+        uTask?.restart()
     }
 
 

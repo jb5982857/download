@@ -10,6 +10,8 @@
         <service
             android:name=".UDownloadService"
             android:exported="false" />
+
+        <receiver android:name=".modules.notification.ButtonClickReceive" />
     </application>
 
 </manifest>

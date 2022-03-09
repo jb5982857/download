@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="udownload_title_color">#FF1c242c</color>
+    <color name="udownload_content_color">#FF1c242c</color>
+    <color name="udownload_button_color">#FF1766b5</color>
+
+    <string name="udownload_pause">暂停</string>
+    <string name="udownload_resume">恢复</string>
+    <string name="udownload_ready_text">准备中，请稍等</string>
+    <string name="udownload_key_downloading">下载中</string>
+</resources>

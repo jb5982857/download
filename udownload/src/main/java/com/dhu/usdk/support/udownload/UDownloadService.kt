@@ -1,15 +1,19 @@
 package com.dhu.usdk.support.udownload
 
+import android.app.Activity
 import android.app.Service
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.os.Build
+import android.content.ServiceConnection
+import android.os.Binder
 import android.os.IBinder
 import android.os.PowerManager
 import com.dhu.usdk.support.udownload.modules.NotificationModule
 import com.dhu.usdk.support.udownload.modules.download.DownloadManager
 import com.dhu.usdk.support.udownload.modules.download.UInternalTask
 import com.dhu.usdk.support.udownload.utils.ObjectWrapperForBinder
+import com.dhu.usdk.support.udownload.utils.ULog
 
 class UDownloadService : Service() {
     companion object {
@@ -19,21 +23,53 @@ class UDownloadService : Service() {
         @Volatile
         var isAlive = false
 
-        fun add(context: Context, uTask: UTask) {
-            val intent = Intent(context, UDownloadService::class.java).apply {
+        fun add(activity: Activity, uTask: UTask) {
+            val intent = Intent(activity, UDownloadService::class.java).apply {
                 putExtra(ACTION, Action.ADD.value)
                 putExtra(TASK, ObjectWrapperForBinder.create(uTask))
             }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(intent)
-            } else {
-                context.startService(intent)
-            }
+
+            activity.bindService(intent, object : ServiceConnection {
+                override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+                    (service as DownloadBinder?)?.getService()?.onStartCommand(intent, 0, 0)
+                }
+
+                override fun onServiceDisconnected(name: ComponentName?) {
+                    isAlive = false
+                }
+            }, BIND_AUTO_CREATE)
+        }
+
+        fun stop(activity: Activity, uTask: UTask) {
+            
+        }
+
+        fun stopSelf(context: Context) {
+            isAlive = false
+            context.stopService(Intent(context, UDownloadService::class.java))
+        }
+
+        fun keepAlive(context: Context?) {
+//            if (isAlive) {
+//                context?.startService(Intent(context, UDownloadService::class.java).apply {
+//                    putExtra(ACTION, Action.KEEP_ALIVE.value)
+//                })
+//            }
         }
     }
 
-    override fun onBind(p0: Intent?): IBinder? {
-        return null
+    private val binder by lazy {
+        DownloadBinder()
+    }
+
+    override fun onBind(p0: Intent?): IBinder {
+        return binder
+    }
+
+    private inner class DownloadBinder : Binder() {
+        fun getService(): UDownloadService {
+            return this@UDownloadService
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -46,8 +82,8 @@ class UDownloadService : Service() {
             wakeLock.acquire(10 * 60 * 1000L /*10 minutes*/)
         }
         when (intent.getIntExtra(ACTION, Action.NONE.value)) {
-            Action.NONE.value -> {
-
+            Action.NONE.value, Action.KEEP_ALIVE.value -> {
+                ULog.d("keep alive")
             }
 
             Action.ADD.value -> {
@@ -98,6 +134,10 @@ class UDownloadService : Service() {
                     DownloadManager.instance.stop(this@UDownloadService, this)
                 }
             }
+
+            Action.RELEASE.value -> {
+                releaseDownload()
+            }
         }
         return START_NOT_STICKY
     }
@@ -114,6 +154,10 @@ class UDownloadService : Service() {
         }
     }
 
+    private fun releaseDownload() {
+        DownloadManager.instance.releaseAll(this@UDownloadService)
+    }
+
     private val wakeLock: PowerManager.WakeLock by lazy {
         (getSystemService(Context.POWER_SERVICE) as PowerManager).run {
             newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MyApp::UDownloadWakeLock")
@@ -122,10 +166,12 @@ class UDownloadService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        isAlive = false
         wakeLock.release()
+        releaseDownload()
     }
 }
 
 enum class Action(val value: Int) {
-    NONE(0), ADD(1), PAUSE(2), STOP(3), RESTART(4)
+    NONE(0), ADD(1), PAUSE(2), STOP(3), RESTART(4), KEEP_ALIVE(5), RELEASE(6)
 }
