@@ -1,16 +1,19 @@
 package com.dhu.usdk.support.udownload.support.thread
 
 import com.dhu.usdk.support.udownload.modules.ConfigCenter
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
-import java.util.concurrent.ThreadFactory
+import com.dhu.usdk.support.udownload.utils.ULog
+import java.util.concurrent.*
 
 
-val TASK_POOL: ExecutorService = Executors.newFixedThreadPool(ConfigCenter.TASK_COUNT)
+val DOWNLOAD_POOL_TASK_THREAD_FACTORY = threadFactory("udownload_task_pool", false)
+val DOWNLOAD_POOL_THREAD_FACTORY = threadFactory("udownload_item_pool", false)
 
-val DOWNLOAD_POOL_THREAD_FACTORY = threadFactory("udownload_pool", false)
+val TASK_POOL: ExecutorService = ThreadPoolExecutor(
+    ConfigCenter.TASK_COUNT, ConfigCenter.TASK_COUNT, 0, TimeUnit.SECONDS,
+    SynchronousQueue(), DOWNLOAD_POOL_TASK_THREAD_FACTORY
+)
 
-fun threadFactory(name: String?, daemon: Boolean): ThreadFactory {
+fun threadFactory(name: String, daemon: Boolean): ThreadFactory {
     return ThreadFactory { runnable: Runnable? ->
         val result = Thread(runnable, name)
         result.isDaemon = daemon
@@ -18,7 +21,8 @@ fun threadFactory(name: String?, daemon: Boolean): ThreadFactory {
     }
 }
 
-val DOWNLOAD_POOL: ExecutorService = Executors.newFixedThreadPool(
-    ConfigCenter.THREAD_COUNT,
-    DOWNLOAD_POOL_THREAD_FACTORY
-)
+val DOWNLOAD_POOL: ExecutorService = ThreadPoolExecutor(
+    ConfigCenter.THREAD_COUNT, ConfigCenter.THREAD_COUNT,
+    0, TimeUnit.SECONDS,
+    LinkedBlockingQueue<Runnable>(), DOWNLOAD_POOL_THREAD_FACTORY
+) { r, executor -> ULog.d("reject") }

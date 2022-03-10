@@ -5,11 +5,12 @@ import com.dhu.usdk.support.udownload.UDownloadService
 import com.dhu.usdk.support.udownload.modules.ConfigCenter
 import com.dhu.usdk.support.udownload.support.thread.DOWNLOAD_POOL
 import com.dhu.usdk.support.udownload.utils.ULog
+import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
 
 class DownloadItemManager {
     private val lock = Object()
-    private val itemQueue = ConcurrentLinkedQueue<ItemTaskData>()
+    private val itemQueue = Vector<VectorData>()
 
     fun init() {
         Thread {
@@ -19,27 +20,47 @@ class DownloadItemManager {
         }.start()
     }
 
+    @Volatile
+    var lastChoiceDataIndex = 0
+
     private fun next(): ItemTaskData {
         synchronized(lock) {
             while (itemQueue.isEmpty()) {
                 lock.wait()
             }
-            return itemQueue.poll()!!
+
+            if (lastChoiceDataIndex >= itemQueue.size - 1) {
+                lastChoiceDataIndex = 0
+            } else {
+                lastChoiceDataIndex++
+            }
+
+            ULog.d("index $lastChoiceDataIndex , queue size ${itemQueue.size}")
+            val vectorData = itemQueue[lastChoiceDataIndex]
+            val item = vectorData.queue.poll()!!
+            if (vectorData.queue.isEmpty()) {
+                itemQueue.remove(vectorData)
+            }
+            return item
         }
     }
 
-    fun set(item: ItemTaskData) {
+    fun set(uInternalTask: UInternalTask, item: ItemTaskData) {
         synchronized(lock) {
-            itemQueue.add(item)
+            val vectorData = itemQueue.find { it.uInternalTask == uInternalTask }
+            if (vectorData != null) {
+                vectorData.queue.add(item)
+            } else {
+                val newVectorData = VectorData(ConcurrentLinkedQueue<ItemTaskData>().apply {
+                    this.add(item)
+                }, uInternalTask)
+                itemQueue.add(newVectorData)
+            }
             lock.notifyAll()
         }
     }
 
     private fun startNextRunnable() {
-        ULog.d("startNextRunnable ${UDownloadService.isAlive}")
-        if (!UDownloadService.isAlive) {
-            return
-        }
         val itemData = next()
         val item = itemData.item
         val callback = itemData.downloadingListener
@@ -66,15 +87,20 @@ class DownloadItemManager {
                     }
                 }
                 callback(ItemDownloadState.FINISH)
+                startNextRunnable()
             }
 
-            startNextRunnable()
         }
     }
 
     fun releaseData() {
         itemQueue.clear()
     }
+
+    data class VectorData(
+        val queue: ConcurrentLinkedQueue<ItemTaskData>,
+        val uInternalTask: UInternalTask
+    )
 
     data class ItemTaskData(val item: Item, val downloadingListener: (ItemDownloadState) -> Unit)
 

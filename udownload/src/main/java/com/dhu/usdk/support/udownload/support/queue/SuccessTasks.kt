@@ -13,24 +13,26 @@ import kotlin.collections.ArrayList
 class SuccessTasks(val task: UTask) : ConcurrentLinkedQueue<Item>() {
 
     fun addSuccessItem(item: Item): Boolean {
-        if (contains(item)) {
-            return true
-        }
-        val items = ArrayList<Item>()
-        switchUiThreadIfNeeded {
-            task.downloadItemFinishListener(item)
-        }
-        items.add(item)
-        item.state = State.SUCCESS
-        item.duplicateItem.forEach {
-            it.state = State.SUCCESS
-            switchUiThreadIfNeeded {
-                task.downloadItemFinishListener(it)
+        synchronized(this) {
+            if (contains(item)) {
+                return true
             }
-            items.add(it)
-        }
+            val items = ArrayList<Item>()
+            switchUiThreadIfNeeded {
+                task.downloadItemFinishListener(item)
+            }
+            items.add(item)
+            item.state = State.SUCCESS
+            item.duplicateItem.forEach {
+                it.state = State.SUCCESS
+                switchUiThreadIfNeeded {
+                    task.downloadItemFinishListener(it)
+                }
+                items.add(it)
+            }
 
-        return addAll(items)
+            return addAll(items)
+        }
     }
 
 }

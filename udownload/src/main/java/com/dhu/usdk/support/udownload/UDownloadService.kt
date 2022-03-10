@@ -14,11 +14,14 @@ import com.dhu.usdk.support.udownload.modules.download.DownloadManager
 import com.dhu.usdk.support.udownload.modules.download.UInternalTask
 import com.dhu.usdk.support.udownload.utils.ObjectWrapperForBinder
 import com.dhu.usdk.support.udownload.utils.ULog
+import java.lang.ref.WeakReference
 
 class UDownloadService : Service() {
     companion object {
         const val ACTION = "action"
         const val TASK = "task"
+
+        var tempConn: ServiceConnection? = null
 
         @Volatile
         var isAlive = false
@@ -29,19 +32,32 @@ class UDownloadService : Service() {
                 putExtra(TASK, ObjectWrapperForBinder.create(uTask))
             }
 
-            activity.bindService(intent, object : ServiceConnection {
+            val conn = createConn(activity, intent)
+            tempConn = conn
+            activity.bindService(intent, conn, BIND_AUTO_CREATE)
+        }
+
+        private fun createConn(activity: Activity, intent: Intent?): ServiceConnection {
+            val conn = object : ServiceConnection {
                 override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-                    (service as DownloadBinder?)?.getService()?.onStartCommand(intent, 0, 0)
+                    (service as DownloadBinder?)?.getService()?.apply {
+                        connection = tempConn
+                        setBindActivity(activity)
+                        onStartCommand(intent, 0, 0)
+                    }
                 }
 
                 override fun onServiceDisconnected(name: ComponentName?) {
+                    tempConn = null
                     isAlive = false
                 }
-            }, BIND_AUTO_CREATE)
+            }
+
+            return conn
         }
 
         fun stop(activity: Activity, uTask: UTask) {
-            
+
         }
 
         fun stopSelf(context: Context) {
@@ -62,6 +78,9 @@ class UDownloadService : Service() {
         DownloadBinder()
     }
 
+    private var bindActivity: WeakReference<Activity>? = null
+    var connection: ServiceConnection? = null
+
     override fun onBind(p0: Intent?): IBinder {
         return binder
     }
@@ -70,6 +89,10 @@ class UDownloadService : Service() {
         fun getService(): UDownloadService {
             return this@UDownloadService
         }
+    }
+
+    fun setBindActivity(activity: Activity) {
+        bindActivity = WeakReference(activity)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -146,7 +169,9 @@ class UDownloadService : Service() {
         val lastExistNotification = NotificationModule.remove(id)
         NotificationModule.removeNotification(id)
         if (lastExistNotification == null) {
-            stopSelf()
+            connection?.apply {
+                bindActivity?.get()?.unbindService(this)
+            }
             isAlive = false
         }
         lastExistNotification?.apply {

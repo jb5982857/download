@@ -59,7 +59,6 @@ class DownloadManager private constructor() {
     }
 
     fun pause(context: Context, task: UTask) {
-//        DownloadTaskLifecycle.instance.findTaskByUTask(task)?.
     }
 
     fun stop(context: Context, task: UTask) {
@@ -138,7 +137,7 @@ class DownloadManager private constructor() {
 
     private fun startDownloadItem(task: UInternalTask, item: Item?) {
         item ?: return
-        itemManager.set(DownloadItemManager.ItemTaskData(item) {
+        itemManager.set(task, DownloadItemManager.ItemTaskData(item) {
             when (it) {
                 DownloadItemManager.ItemDownloadState.START_DOWNLOAD -> {
                     task.uTask.lockItemTaskIfNeeded()
@@ -149,6 +148,7 @@ class DownloadManager private constructor() {
                 }
 
                 DownloadItemManager.ItemDownloadState.RESULT_SUCCESS -> {
+
                     task.uTask.successTasks.addSuccessItem(item)
                 }
 
@@ -157,7 +157,7 @@ class DownloadManager private constructor() {
                 }
 
                 DownloadItemManager.ItemDownloadState.FINISH -> {
-                    ULog.i("有结束了的，总数 ${task.uTask.downloadQueue.size}, 成功数 ${task.uTask.successTasks.size}, 失败数 ${task.uTask.failedTasks.size}")
+                    ULog.i("item 下载，${item.url},有结束了的，总数 ${task.uTask.downloadQueue.size}, 成功数 ${task.uTask.successTasks.size}, 失败数 ${task.uTask.failedTasks.size}")
                     finishTaskIfNeeded(task)
                 }
             }

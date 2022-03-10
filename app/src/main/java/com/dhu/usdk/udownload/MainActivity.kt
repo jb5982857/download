@@ -10,12 +10,14 @@ import android.widget.Toast
 import com.dh.usdk.support.ugson.Gson
 import com.dh.usdk.support.uokhttp.*
 import com.dhu.usdk.support.udownload.Item
+import com.dhu.usdk.support.udownload.State
 import com.dhu.usdk.support.udownload.UTask
 import com.dhu.usdk.support.udownload.utils.MD5Util
 import com.dhu.usdk.support.udownload.utils.ULog
 import kotlinx.android.synthetic.main.activity_main.*
 import java.io.File
 import java.io.IOException
+import kotlin.system.exitProcess
 
 class MainActivity : AppCompatActivity() {
     companion object {
@@ -76,9 +78,9 @@ class MainActivity : AppCompatActivity() {
                 uTask = UTask(true, "test").apply {
                     totalCount = data.manifiest.size
                     data.manifiest.forEach {
-//                        if (aIndex >= 400) {
-//                            return@apply
-//                        }
+                        if (aIndex >= 200) {
+                            return@apply
+                        }
                         aIndex++
                         add(
                             Item(
@@ -88,10 +90,12 @@ class MainActivity : AppCompatActivity() {
                         )
                     }
                 }.apply {
+                    var startTime = 0L
+                    var totalLength = 0L
                     downloadFinishListener =
                         { tasks: Collection<Item>, successTasks: Collection<Item>, failedTasks: Collection<Item> ->
                             appendResult(
-                                "下载结束了 总数${tasks.size} , 成功数${successTasks.size} , 失败数${failedTasks.size}"
+                                "下载结束了 总数${tasks.size} , 成功数${successTasks.size} , 失败数${failedTasks.size}, 速度 ${totalLength / 1024 / ((System.currentTimeMillis() - startTime) / 1000)} kb/s"
                             )
 
                         }
@@ -106,33 +110,37 @@ class MainActivity : AppCompatActivity() {
                             pb_progress.progress =
                                 (finishBytes / totalBytes.toFloat() * 100).toInt()
                             tv_speed.text = "当前速度 $speed"
+                            totalLength = totalBytes
                         }
                     downloadStateChangeListener = {
 //                        appendResult("状态变化 $it")
                         tv_state.text = "状态 ${it.name}"
-
-                    }
-                    start(this@MainActivity)
-                }
-
-                UTask(true, "test2").apply {
-                    data.manifiest.forEach {
-                        if (bIndex >= 80) {
-                            return@apply
+                        if (it == State.READY) {
+                            startTime = System.currentTimeMillis()
                         }
-                        bIndex++
-                        add(
-                            Item(
-                                "https://inner-cdn.dhgames.cn:12345/ih/${it.md5}",
-                                applicationContext.getExternalFilesDir("")
-                                    ?.getAbsolutePath() + "/udownload1/" + it.path,
-                                it.md5, it.size
-                            )
-                        )
+
                     }
-                }.apply {
                     start(this@MainActivity)
                 }
+
+//                UTask(true, "test2").apply {
+//                    data.manifiest.forEach {
+////                        if (bIndex >= 80) {
+////                            return@apply
+////                        }
+//                        bIndex++
+//                        add(
+//                            Item(
+//                                "https://inner-cdn.dhgames.cn:12345/ih/${it.md5}",
+//                                applicationContext.getExternalFilesDir("")
+//                                    ?.getAbsolutePath() + "/udownload1/" + it.path,
+//                                it.md5, it.size
+//                            )
+//                        )
+//                    }
+//                }.apply {
+//                    start(this@MainActivity)
+//                }
             }
         })
     }
@@ -188,6 +196,11 @@ class MainActivity : AppCompatActivity() {
 
     private fun appendResult(msg: String) {
         Log.d(TAG, msg)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        exitProcess(0)
     }
 
 }

@@ -98,7 +98,7 @@ object NotificationModule {
     @Synchronized
     fun updateProgress(context: Context, id: Int, progress: Int, content: String) {
         switchUiThreadIfNeeded {
-            ULog.d("update Progress isAlive ${UDownloadService.isAlive} , progress $progress, content $content")
+            ULog.d("update Progress isAlive ${UDownloadService.isAlive} , id $id, progress $progress, content $content")
             if (!UDownloadService.isAlive) {
                 return@switchUiThreadIfNeeded
             }
@@ -138,9 +138,15 @@ object NotificationModule {
         switchUiThreadIfNeeded {
             initBuildIfNeeded(context)
             builder?.setSilent(false)
-            builder?.setContentTitle("下载完成")
-            builder?.setProgress(100, 100, false)
-            builder?.setContentText("")
+            builder?.setContent(getContentView(context).apply {
+                setViewVisibility(R.id.pb_progress, View.INVISIBLE)
+                setTextViewText(
+                    R.id.tv_title,
+                    context.getString(R.string.udownload_key_download_success)
+                )
+                setViewVisibility(R.id.tv_pause, View.INVISIBLE)
+
+            })
             builder?.setAutoCancel(true)
             notificationManager?.notify(RESULT_ID + (id - DEFAULT_ID), builder?.build())
         }
@@ -148,11 +154,20 @@ object NotificationModule {
 
     fun showFailedNotification(context: Context, id: Int) {
         switchUiThreadIfNeeded {
+            ULog.d("showFailedNotification $id")
             initBuildIfNeeded(context)
             builder?.setSilent(false)
-            builder?.setContentTitle("下载失败")
-            builder?.setProgress(100, 0, false)
-            builder?.setContentText("")
+            builder?.setContent(getContentView(context).apply {
+                setViewVisibility(R.id.pb_progress, View.INVISIBLE)
+                setTextViewText(
+                    R.id.tv_title,
+                    context.getString(R.string.udownload_key_download_failed)
+                )
+                setTextViewText(R.id.tv_content, "")
+
+                setViewVisibility(R.id.tv_pause, View.INVISIBLE)
+
+            })
             builder?.setAutoCancel(true)
             notificationManager?.notify(RESULT_ID + (id - DEFAULT_ID), builder?.build())
         }
