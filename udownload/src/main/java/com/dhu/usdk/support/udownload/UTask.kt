@@ -139,6 +139,10 @@ class UTask(
             }
         }
     }
+
+    fun isFinished(): Boolean {
+        return state == State.ON_STOP || state == State.ON_FINISH || state == State.SUCCESS || state == State.FAILED
+    }
 }
 
 enum class State(value: Int) {

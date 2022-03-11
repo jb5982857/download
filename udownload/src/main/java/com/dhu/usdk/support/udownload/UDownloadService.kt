@@ -170,7 +170,11 @@ class UDownloadService : Service() {
         NotificationModule.removeNotification(id)
         if (lastExistNotification == null) {
             connection?.apply {
-                bindActivity?.get()?.unbindService(this)
+                try {
+                    bindActivity?.get()?.unbindService(this)
+                }catch (e:Exception){
+
+                }
             }
             isAlive = false
         }

@@ -75,7 +75,7 @@ class MainActivity : AppCompatActivity() {
                     Gson().fromJson(result, RootData::class.java)
                 var aIndex = 0
                 var bIndex = 0
-                uTask = UTask(true, "test").apply {
+                uTask = UTask(false, "test").apply {
                     totalCount = data.manifiest.size
                     data.manifiest.forEach {
                         if (aIndex >= 200) {
@@ -95,7 +95,7 @@ class MainActivity : AppCompatActivity() {
                     downloadFinishListener =
                         { tasks: Collection<Item>, successTasks: Collection<Item>, failedTasks: Collection<Item> ->
                             appendResult(
-                                "下载结束了 总数${tasks.size} , 成功数${successTasks.size} , 失败数${failedTasks.size}, 速度 ${totalLength / 1024 / ((System.currentTimeMillis() - startTime) / 1000)} kb/s"
+                                "下载结束了 总数${tasks.size} , 成功数${successTasks.size} , 失败数${failedTasks.size}"
                             )
 
                         }

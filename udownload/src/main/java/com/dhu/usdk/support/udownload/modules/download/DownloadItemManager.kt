@@ -72,21 +72,31 @@ class DownloadItemManager {
             ).apply {
                 if (this == null) {
                     ULog.i("$item 11111下载失败 null")
-                    callback(ItemDownloadState.RESULT_FAILED)
+                    if (callback(ItemDownloadState.RESULT_FAILED)){
+                        return@submit
+                    }
                 } else {
-                    callback(ItemDownloadState.HTTP_CONNECT_SUCCESS)
+                    if (callback(ItemDownloadState.HTTP_CONNECT_SUCCESS)){
+                        return@submit
+                    }
                     if (item.ioManager.writeFile(item.path, this, item.md5)
                     ) {
                         ULog.i(
                             "$item 11111下载成功"
                         )
-                        callback(ItemDownloadState.RESULT_SUCCESS)
+                        if (callback(ItemDownloadState.RESULT_SUCCESS)){
+                            return@submit
+                        }
                     } else {
                         ULog.i("$item 11111下载失败")
-                        callback(ItemDownloadState.RESULT_FAILED)
+                        if (callback(ItemDownloadState.RESULT_FAILED)){
+                            return@submit
+                        }
                     }
                 }
-                callback(ItemDownloadState.FINISH)
+                if (callback(ItemDownloadState.FINISH)){
+                    return@submit
+                }
                 startNextRunnable()
             }
 
@@ -102,7 +112,7 @@ class DownloadItemManager {
         val uInternalTask: UInternalTask
     )
 
-    data class ItemTaskData(val item: Item, val downloadingListener: (ItemDownloadState) -> Unit)
+    data class ItemTaskData(val item: Item, val downloadingListener: (ItemDownloadState) -> Boolean)
 
     enum class ItemDownloadState {
         START_DOWNLOAD, HTTP_CONNECT_SUCCESS, RESULT_FAILED, RESULT_SUCCESS, FINISH

@@ -47,8 +47,6 @@ class DownloadManager private constructor() {
         }
     }
 
-    @Volatile
-    var downLoadCount = 0
     fun add(uInternalTask: UInternalTask) {
         DownloadTaskLifecycle.instance.add(uInternalTask)
         taskManager.addTask(uInternalTask)
@@ -71,10 +69,11 @@ class DownloadManager private constructor() {
 
     private fun release() {
         ULog.d("release all")
-        TASK_POOL.shutdownNow()
-        DOWNLOAD_POOL.shutdownNow()
         itemManager.releaseData()
         taskManager.releaseData()
+    }
+
+    private fun initPoolIfNeeded() {
     }
 
     private fun startTask() {
@@ -89,6 +88,10 @@ class DownloadManager private constructor() {
                 var successLen = 0L
                 var totalLen = 0L
                 task.uTask.downloadQueue.forEach {
+                    task.uTask.lockItemTaskIfNeeded()
+                    if (task.uTask.isFinished()){
+                        return@withContext
+                    }
                     totalLen += it.size
                     //有标记下载成功的，直接放置到成功队列
                     if (it.state == State.SUCCESS) {
@@ -125,9 +128,15 @@ class DownloadManager private constructor() {
                     task.uTask.pendingQueue.remove(it)
                 }
 
+                if (task.uTask.isFinished()){
+                    return@withContext
+                }
                 task.scheduleModule.start(application!!)
                 //开始下载
                 task.uTask.pendingQueue.forEach {
+                    if (task.uTask.isFinished()){
+                        return@withContext
+                    }
                     startDownloadItem(task, it)
                 }
 
@@ -148,7 +157,6 @@ class DownloadManager private constructor() {
                 }
 
                 DownloadItemManager.ItemDownloadState.RESULT_SUCCESS -> {
-
                     task.uTask.successTasks.addSuccessItem(item)
                 }
 
@@ -161,6 +169,7 @@ class DownloadManager private constructor() {
                     finishTaskIfNeeded(task)
                 }
             }
+            return@ItemTaskData task.uTask.isFinished()
 
         })
     }

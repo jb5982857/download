@@ -55,7 +55,7 @@ class DownloadScheduleModule() {
         isStart = true
 
         mHandler = Handler(downloadHandlerThread.looper) {
-            if (!UDownloadService.isAlive) {
+            if (task?.isFinished() == true) {
                 return@Handler true
             }
             when (it.what) {
