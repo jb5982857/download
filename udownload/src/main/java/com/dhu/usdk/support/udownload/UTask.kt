@@ -165,12 +165,16 @@ enum class State(value: Int) {
  * path -> 目标路径，下载过程中会生成 path.temp 文件，下载完成后 rename 到 path
  * md5 -> 文件的 md5 值
  * size -> 文件大小，单位 byte
+ * userData -> 用户的信息，C# 地址
+ * tag -> 透传的数据
  */
 data class Item(
     val url: String,
     val path: String,
     var md5: String,
-    val size: Long
+    val size: Long,
+    val userData: Int,
+    val tag: String
 ) {
     //重复的 item ，必须是 url 和 path 相同
     val duplicateItem = ArrayList<Item>()

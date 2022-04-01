@@ -9,7 +9,7 @@ import com.dhu.usdk.support.udownload.support.network.OkhttpFactory
 import com.dhu.usdk.support.udownload.support.network.UrlConnectionFactory
 
 object ConfigCenter {
-    //总下载启动5个线程
+    //总下载线程数量
     const val THREAD_COUNT = 9
 
     //可以同时处理的 TASK 个数
