@@ -96,10 +96,11 @@ class UTask(
         if (isShowNotification) {
             UDownloadService.add(activity, this)
         } else {
-            DownloadManager.instance.add(UInternalTask(this, downloadFinish = {
+            DownloadManager.instance.add(UInternalTask(this, downloadFinish = { _, _ ->
 
             }))
         }
+        state = State.DOWNLOADING
         isStart = true
     }
 
@@ -143,6 +144,11 @@ class UTask(
     fun isFinished(): Boolean {
         return state == State.ON_STOP || state == State.ON_FINISH || state == State.SUCCESS || state == State.FAILED
     }
+
+    fun isDownloading(): Boolean {
+        return state == State.DOWNLOADING
+    }
+
 }
 
 enum class State(value: Int) {

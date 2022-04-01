@@ -111,22 +111,23 @@ class UDownloadService : Service() {
 
             Action.ADD.value -> {
                 uTask?.apply {
-                    val uInternalTask = UInternalTask(this, downloadFinish = {
-                        it.notificationId?.apply {
-                            if (it.uTask.failedTasks.size == 0) {
-                                NotificationModule.showSuccessNotification(
-                                    this@UDownloadService,
-                                    this
-                                )
-                            } else {
-                                NotificationModule.showFailedNotification(
-                                    this@UDownloadService,
-                                    this
-                                )
+                    val uInternalTask =
+                        UInternalTask(this, downloadFinish = { uInternalTask, isSuccess ->
+                            uInternalTask.notificationId?.apply {
+                                if (isSuccess) {
+                                    NotificationModule.showSuccessNotification(
+                                        this@UDownloadService,
+                                        this
+                                    )
+                                } else {
+                                    NotificationModule.showFailedNotification(
+                                        this@UDownloadService,
+                                        this
+                                    )
+                                }
+                                removeNotification(this)
                             }
-                            removeNotification(this)
-                        }
-                    })
+                        })
                     uInternalTask.notification = NotificationModule.createNotification(
                         this@UDownloadService
                     )
@@ -172,7 +173,7 @@ class UDownloadService : Service() {
             connection?.apply {
                 try {
                     bindActivity?.get()?.unbindService(this)
-                }catch (e:Exception){
+                } catch (e: Exception) {
 
                 }
             }

@@ -99,9 +99,6 @@ object NotificationModule {
     fun updateProgress(context: Context, id: Int, progress: Int, content: String) {
         switchUiThreadIfNeeded {
             ULog.d("update Progress isAlive ${UDownloadService.isAlive} , id $id, progress $progress, content $content")
-            if (!UDownloadService.isAlive) {
-                return@switchUiThreadIfNeeded
-            }
             initBuildIfNeeded(context)
             builder?.setSilent(true)
             builder?.setContent(getContentView(context).apply {

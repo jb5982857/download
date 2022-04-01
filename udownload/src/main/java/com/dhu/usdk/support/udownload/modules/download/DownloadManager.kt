@@ -7,7 +7,6 @@ import com.dhu.usdk.support.udownload.State
 import com.dhu.usdk.support.udownload.UTask
 import com.dhu.usdk.support.udownload.modules.ConfigCenter.TASK_COUNT
 import com.dhu.usdk.support.udownload.modules.DownloadScheduleModule
-import com.dhu.usdk.support.udownload.support.thread.DOWNLOAD_POOL
 import com.dhu.usdk.support.udownload.support.thread.TASK_POOL
 import com.dhu.usdk.support.udownload.utils.ULog
 import com.dhu.usdk.support.udownload.utils.application
@@ -89,7 +88,7 @@ class DownloadManager private constructor() {
                 var totalLen = 0L
                 task.uTask.downloadQueue.forEach {
                     task.uTask.lockItemTaskIfNeeded()
-                    if (task.uTask.isFinished()){
+                    if (task.uTask.isFinished()) {
                         return@withContext
                     }
                     totalLen += it.size
@@ -128,13 +127,13 @@ class DownloadManager private constructor() {
                     task.uTask.pendingQueue.remove(it)
                 }
 
-                if (task.uTask.isFinished()){
+                if (task.uTask.isFinished()) {
                     return@withContext
                 }
                 task.scheduleModule.start(application!!)
                 //开始下载
                 task.uTask.pendingQueue.forEach {
-                    if (task.uTask.isFinished()){
+                    if (task.uTask.isFinished()) {
                         return@withContext
                     }
                     startDownloadItem(task, it)
@@ -174,35 +173,32 @@ class DownloadManager private constructor() {
         })
     }
 
+    /**
+     * 判断是否下载完成了
+     */
     @Synchronized
     private fun finishTaskIfNeeded(
         uInternalTask: UInternalTask
     ): Boolean {
-        if (uInternalTask.uTask.downloadQueue.size == uInternalTask.uTask.successTasks.size + uInternalTask.uTask.failedTasks.size) {
-            if (!retryTaskIfNeeded(uInternalTask)) {
-                uInternalTask.scheduleModule.stop()
-                switchUiThreadIfNeeded {
-                    uInternalTask.uTask.downloadFinishListener(
-                        uInternalTask.uTask.downloadQueue,
-                        uInternalTask.uTask.successTasks, uInternalTask.uTask.failedTasks
-                    )
-                }
-                switchUiThreadIfNeeded {
-                    //下载完成
-                    uInternalTask.downloadFinish(uInternalTask)
-                }
-                launchNextTasks()
-                switchUiThreadIfNeeded {
-                    uInternalTask.uTask.downloadStateChangeListener(State.ON_FINISH)
-                }
-                return true
-            } else {
-                return false
-            }
+        val taskState = uInternalTask.isFinished()
+        if (taskState == UInternalTask.UInternalTaskState.DOWNLOADING) {
+            return false
+        }
+
+        if (taskState == UInternalTask.UInternalTaskState.SUCCESS || taskState == UInternalTask.UInternalTaskState.FAILED) {
+            launchNextTasks()
+            return true
+        }
+
+        if (taskState == UInternalTask.UInternalTaskState.NEED_RETRY) {
+            retryTaskIfNeeded(uInternalTask)
         }
         return false
     }
 
+    /**
+     * 重试失败的下载
+     */
     private fun retryTaskIfNeeded(uInternalTask: UInternalTask): Boolean {
         if (!uInternalTask.retry && !uInternalTask.uTask.failedTasks.isEmpty()) {
             uInternalTask.retry = true
@@ -223,8 +219,40 @@ class DownloadManager private constructor() {
 data class UInternalTask(
     val uTask: UTask,
     var notification: Notification? = null,
-    val downloadFinish: (UInternalTask) -> Unit = {},
+    val downloadFinish: (UInternalTask, Boolean) -> Unit = { _: UInternalTask, _: Boolean -> },
     var notificationId: Int? = null,
     val scheduleModule: DownloadScheduleModule = DownloadScheduleModule(),
     var retry: Boolean = false
-)
+) {
+    fun isFinished(): UInternalTaskState {
+        return if (uTask.downloadQueue.size == uTask.successTasks.size + uTask.failedTasks.size) {
+            if (uTask.failedTasks.size != 0) {
+                if (!retry) {
+                    UInternalTaskState.NEED_RETRY
+                } else {
+                    scheduleModule.stop()
+                    downloadFinish(this, false)
+                    UInternalTaskState.FAILED
+                }
+            } else {
+                scheduleModule.stop()
+                switchUiThreadIfNeeded {
+                    downloadFinish(this, true)
+                    uTask.downloadFinishListener(
+                        uTask.downloadQueue,
+                        uTask.successTasks, uTask.failedTasks
+                    )
+                    uTask.downloadStateChangeListener(State.ON_FINISH)
+
+                }
+                UInternalTaskState.SUCCESS
+            }
+        } else {
+            UInternalTaskState.DOWNLOADING
+        }
+    }
+
+    enum class UInternalTaskState {
+        DOWNLOADING, SUCCESS, FAILED, NEED_RETRY
+    }
+}

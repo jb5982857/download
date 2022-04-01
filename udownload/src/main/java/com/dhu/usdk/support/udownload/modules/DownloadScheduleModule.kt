@@ -23,6 +23,8 @@ val downloadHandlerThread by lazy {
 
 class DownloadScheduleModule() {
     private val ioManagers = ConcurrentLinkedQueue<AbIoManager>()
+
+    @Volatile
     private var isStart = false
     private var mHandler: Handler? = null
 
@@ -55,7 +57,7 @@ class DownloadScheduleModule() {
         isStart = true
 
         mHandler = Handler(downloadHandlerThread.looper) {
-            if (task?.isFinished() == true) {
+            if (!isStart) {
                 return@Handler true
             }
             when (it.what) {
@@ -73,9 +75,6 @@ class DownloadScheduleModule() {
                         if (it.isWriteFinish) {
                             needRemoveManagers.add(it)
                         }
-                    }
-                    if (!isStart) {
-                        return@Handler true
                     }
 
                     val speed = getSpeed(
