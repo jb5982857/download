@@ -50,17 +50,18 @@ class MainActivity : AppCompatActivity() {
                     QQ_URL,
                     applicationContext.getExternalFilesDir("")
                         ?.absolutePath + "/udownload2/qq.apk",
-                    "3975e6512672dd620ff716f3b2a788a4", 158351948
+                    "3975e6512672dd620ff716f3b2a788a4", 158351948, 1, "111", 0
                 )
             )
         }.apply {
-            start(this@MainActivity)
+            start(0, 0, this@MainActivity)
         }
     }
 
     fun btDownload(view: View) {
         var successCount = 0
         var totalCount = 0
+        val downloadCount = 200
         val request = Request.Builder()
             .url(URL)
             .build()
@@ -75,52 +76,71 @@ class MainActivity : AppCompatActivity() {
                     Gson().fromJson(result, RootData::class.java)
                 var aIndex = 0
                 var bIndex = 0
-                uTask = UTask(false, "test").apply {
-                    totalCount = data.manifiest.size
-                    data.manifiest.forEach {
-                        if (aIndex >= 200) {
-                            return@apply
-                        }
-                        aIndex++
-                        add(
-                            Item(
-                                "https://inner-cdn.dhgames.cn:12345/ih/${it.md5}",
-                                dirPath + it.path, it.md5, it.size
-                            )
+                uTask = UTask(true, "test").apply {
+                    totalCount = downloadCount
+                    add(
+                        Item(
+                            "http://10.0.0.89:8000/ih_release-1.5.0-protect.apk",
+                            dirPath + "test.apk",
+                            "527e46db387adb254f6984e0def6f470",
+                            762174239,
+                            0x11,
+                            "tag",
+                            1
                         )
-                    }
+                    )
+//                    data.manifiest.forEach {
+//                        if (aIndex >= downloadCount) {
+//                            return@apply
+//                        }
+//                        aIndex++
+//                        add(
+//                            Item(
+//                                "https://inner-cdn.dhgames.cn:12345/ih/${it.md5}",
+//                                dirPath + it.path, it.md5, it.size, 0x11, "tag", 1
+//                            )
+//                        )
+//                    }
                 }.apply {
                     var startTime = 0L
                     var totalLength = 0L
                     downloadFinishListener =
                         { tasks: Collection<Item>, successTasks: Collection<Item>, failedTasks: Collection<Item> ->
-                            appendResult(
-                                "下载结束了 总数${tasks.size} , 成功数${successTasks.size} , 失败数${failedTasks.size}"
-                            )
+                            this@MainActivity.runOnUiThread {
+                                appendResult(
+                                    "下载结束了 总数${tasks.size} , 成功数${successTasks.size} , 失败数${failedTasks.size}"
+                                )
+                            }
 
                         }
                     downloadItemFinishListener = {
 //                        appendResult("item ${it.url} 下载完成")
-                        successCount++
-                        tv_progress.text = "下载完成数 $successCount, 总数 $totalCount"
+                        this@MainActivity.runOnUiThread {
+                            successCount++
+                            tv_progress.text = "下载完成数 $successCount, 总数 $totalCount"
+                        }
                     }
                     downloadProgressListener =
-                        { totalBytes: Long, finishBytes: Long, speed: String ->
+                        { totalBytes: Long, finishBytes: Long, speed: Long ->
 //                            appendResult("下载进度，总大小 $totalBytes ，已经完成的大小 $finishBytes , 进度 ${finishBytes / totalBytes.toFloat()} , 当前速度 $speed")
-                            pb_progress.progress =
-                                (finishBytes / totalBytes.toFloat() * 100).toInt()
-                            tv_speed.text = "当前速度 $speed"
-                            totalLength = totalBytes
+                            this@MainActivity.runOnUiThread {
+                                pb_progress.progress =
+                                    (finishBytes / totalBytes.toFloat() * 100).toInt()
+                                tv_speed.text = "当前速度 $speed"
+                                totalLength = totalBytes
+                            }
                         }
                     downloadStateChangeListener = {
-//                        appendResult("状态变化 $it")
-                        tv_state.text = "状态 ${it.name}"
-                        if (it == State.READY) {
-                            startTime = System.currentTimeMillis()
+                        this@MainActivity.runOnUiThread {
+                            tv_state.text = "状态 ${it.name}"
+                            if (it == State.READY) {
+                                startTime = System.currentTimeMillis()
+                            }
                         }
+//                        appendResult("状态变化 $it")
 
                     }
-                    start(this@MainActivity)
+                    start(0, 762174239, this@MainActivity)
                 }
 
 //                UTask(true, "test2").apply {
