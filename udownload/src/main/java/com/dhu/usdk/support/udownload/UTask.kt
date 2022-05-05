@@ -8,7 +8,7 @@ import com.dhu.usdk.support.udownload.modules.download.UInternalTask
 import com.dhu.usdk.support.udownload.support.io.AbIoManager
 import com.dhu.usdk.support.udownload.support.queue.SuccessTasks
 import com.dhu.usdk.support.udownload.utils.ULog
-import com.dhu.usdk.support.udownload.utils.switchUiThreadIfNeeded
+import com.dhu.usdk.support.udownload.utils.switchCallbackThreadIfNeed
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.collections.ArrayList
@@ -27,6 +27,12 @@ class UTask(
     val failedTasks = ConcurrentLinkedQueue<Item>()
     var state: State? = null
 
+    //预设当前长度
+    var currentLen = 0L
+
+    //预设总长度
+    var totalLen = 0L
+
     private val itemLock = Object()
 
     /**
@@ -35,7 +41,7 @@ class UTask(
      * params 2 -> 已下载完成的大小，单位 byte
      * params 3 -> 当前速度，根据实际情况转换 kb/s , Mb/s , b/s
      */
-    var downloadProgressListener = { _: Long, _: Long, _: String -> }
+    var downloadProgressListener = { _: Long, _: Long, _: Long -> }
 
     /**
      * 有文件下载完成，由这里同步
@@ -82,15 +88,17 @@ class UTask(
         return this
     }
 
-    fun start(activity: Activity) {
+    fun start(currentLen: Long, totalLen: Long, activity: Activity) {
         if (isStart) {
             "the task $name is started".apply {
                 ULog.w(this)
             }
             return
         }
+        this.currentLen = currentLen
+        this.totalLen = totalLen
         ULog.i("开始下载，文件数 ${downloadQueue.size}")
-        switchUiThreadIfNeeded {
+        switchCallbackThreadIfNeed {
             downloadStateChangeListener(State.READY)
         }
         if (isShowNotification) {
@@ -151,7 +159,7 @@ class UTask(
 
 }
 
-enum class State(value: Int) {
+enum class State(val value: Int) {
     READY(1), DOWNLOADING(2), ON_PAUSE(3), ON_STOP(4), CELLULAR_PAUSE(5), ON_FINISH(6), SUCCESS(
         0
     ),
@@ -174,7 +182,8 @@ data class Item(
     var md5: String,
     val size: Long,
     val userData: Int,
-    val tag: String
+    val tag: String,
+    val priority: Int
 ) {
     //重复的 item ，必须是 url 和 path 相同
     val duplicateItem = ArrayList<Item>()

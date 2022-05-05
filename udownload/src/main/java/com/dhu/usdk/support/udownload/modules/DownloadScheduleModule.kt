@@ -4,7 +4,6 @@ import android.content.Context
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.Message
-import com.dhu.usdk.support.udownload.UDownloadService
 import com.dhu.usdk.support.udownload.UTask
 import com.dhu.usdk.support.udownload.support.io.AbIoManager
 import com.dhu.usdk.support.udownload.utils.*
@@ -76,27 +75,33 @@ class DownloadScheduleModule() {
                             needRemoveManagers.add(it)
                         }
                     }
+                    ULog.d("success lenth $successLen, last $lastSuccessLen")
 
-                    val speed = getSpeed(
+                    val byteSpeed = getByteSpeed(
                         successLen - lastSuccessLen,
                         (DELAY_TIME / 1000).toInt()
                     )
+
+                    val formatSpeed = getFormatSpeed(byteSpeed)
+                    ULog.d("byteSpeed $byteSpeed $formatSpeed")
                     notificationId?.apply {
                         val progress = successLen.toFloat() * 100 / totalLen
+                        ULog.d("notificationId $progress")
                         NotificationModule.updateProgress(
                             context,
                             this,
                             progress.toInt(),
-                            "下载进度 ${decimalFormat.format(progress)}% , 下载速度 $speed"
+                            "下载进度 ${decimalFormat.format(progress)}% , 下载速度 $formatSpeed"
                         )
                     }
-                    switchUiThreadIfNeeded {
+                    switchCallbackThreadIfNeed {
+                        ULog.d("byteSpeed $byteSpeed")
                         //回调速度
                         task?.downloadProgressListener?.let { it1 ->
                             it1(
                                 totalLen,
                                 successLen,
-                                speed
+                                byteSpeed
                             )
                         }
                     }

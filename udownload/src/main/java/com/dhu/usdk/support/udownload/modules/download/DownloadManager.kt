@@ -10,7 +10,7 @@ import com.dhu.usdk.support.udownload.modules.DownloadScheduleModule
 import com.dhu.usdk.support.udownload.support.thread.TASK_POOL
 import com.dhu.usdk.support.udownload.utils.ULog
 import com.dhu.usdk.support.udownload.utils.application
-import com.dhu.usdk.support.udownload.utils.switchUiThreadIfNeeded
+import com.dhu.usdk.support.udownload.utils.switchCallbackThreadIfNeed
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -78,20 +78,20 @@ class DownloadManager private constructor() {
     private fun startTask() {
         val task = taskManager.next()
         ULog.d("task $task 开始了")
-        switchUiThreadIfNeeded {
+        switchCallbackThreadIfNeed {
             task.uTask.downloadStateChangeListener(State.DOWNLOADING)
         }
 
         GlobalScope.launch {
             withContext(Dispatchers.IO) {
-                var successLen = 0L
-                var totalLen = 0L
+                var successLen = task.uTask.currentLen
+//                var totalLen = 0L
                 task.uTask.downloadQueue.forEach {
                     task.uTask.lockItemTaskIfNeeded()
                     if (task.uTask.isFinished()) {
                         return@withContext
                     }
-                    totalLen += it.size
+//                    totalLen += it.size
                     //有标记下载成功的，直接放置到成功队列
                     if (it.state == State.SUCCESS) {
                         task.uTask.successTasks.addSuccessItem(it)
@@ -118,7 +118,7 @@ class DownloadManager private constructor() {
 
                 task.scheduleModule.init(
                     successLen,
-                    totalLen,
+                    task.uTask.totalLen,
                     task.notificationId, task.uTask
                 )
 
@@ -156,11 +156,14 @@ class DownloadManager private constructor() {
                 }
 
                 DownloadItemManager.ItemDownloadState.RESULT_SUCCESS -> {
+                    item.state = State.SUCCESS
                     task.uTask.successTasks.addSuccessItem(item)
                 }
 
                 DownloadItemManager.ItemDownloadState.RESULT_FAILED -> {
+                    item.state = State.FAILED
                     task.uTask.failedTasks.add(item)
+                    task.uTask.downloadItemFinishListener(item)
                 }
 
                 DownloadItemManager.ItemDownloadState.FINISH -> {
@@ -222,7 +225,7 @@ data class UInternalTask(
     val downloadFinish: (UInternalTask, Boolean) -> Unit = { _: UInternalTask, _: Boolean -> },
     var notificationId: Int? = null,
     val scheduleModule: DownloadScheduleModule = DownloadScheduleModule(),
-    var retry: Boolean = false
+    var retry: Boolean = true
 ) {
     fun isFinished(): UInternalTaskState {
         return if (uTask.downloadQueue.size == uTask.successTasks.size + uTask.failedTasks.size) {
@@ -236,7 +239,7 @@ data class UInternalTask(
                 }
             } else {
                 scheduleModule.stop()
-                switchUiThreadIfNeeded {
+                switchCallbackThreadIfNeed {
                     downloadFinish(this, true)
                     uTask.downloadFinishListener(
                         uTask.downloadQueue,

@@ -17,10 +17,10 @@ class UrlConnectionFactory : IHttpDownload {
                         "application/x-ms-xbap, application/x-ms-application, application/vnd.ms-excel, " +
                         "application/vnd.ms-powerpoint, application/msword, */*"
             )
-            http.setRequestProperty("Accept-Language", "zh-CN")
-            http.setRequestProperty("Referer", url) // 先前网页的地址，当前请求网页紧随其后,即来路
+//            http.setRequestProperty("Accept-Language", "zh-CN")
+//            http.setRequestProperty("Referer", url) // 先前网页的地址，当前请求网页紧随其后,即来路
 
-            http.setRequestProperty("Charset", "UTF-8")
+//            http.setRequestProperty("Charset", "UTF-8")
 
             http.setRequestProperty("Range", "bytes=$start-") //设置获取实体数据的范围
 
