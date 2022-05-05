@@ -7,11 +7,19 @@ import java.io.*
 
 class RandomAccessFileManager(item: Item) :
     AbIoManager(item) {
-    override fun saveFile(filePath: String, inputStream: InputStream): Boolean {
+    override fun saveFile(
+        filePath: String,
+        inputStream: InputStream,
+        isSupportRange: Boolean
+    ): Boolean {
         var raf: RandomAccessFile? = null
         try {
             raf = RandomAccessFile(filePath, "rw")
-            val seek = raf.length()
+            val seek = if (isSupportRange) {
+                raf.length()
+            } else {
+                0
+            }
             ULog.d("$filePath the seek is $seek")
             raf.seek(seek)
             var len: Int

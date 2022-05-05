@@ -9,7 +9,11 @@ import java.io.InputStream
 
 class OkioManager(item: Item) : AbIoManager(item) {
 
-    override fun saveFile(filePath: String, inputStream: InputStream): Boolean {
+    override fun saveFile(
+        filePath: String,
+        inputStream: InputStream,
+        isSupportRange: Boolean
+    ): Boolean {
         try {
             val bufferSource = Okio.buffer(Okio.source(inputStream))
             val sink = Okio.sink(File(filePath))

@@ -1,6 +1,7 @@
 package com.dhu.usdk.support.udownload
 
 import android.app.Activity
+import android.app.Application
 import android.content.Context
 import com.dhu.usdk.support.udownload.modules.ConfigCenter
 import com.dhu.usdk.support.udownload.modules.download.DownloadManager
@@ -8,6 +9,7 @@ import com.dhu.usdk.support.udownload.modules.download.UInternalTask
 import com.dhu.usdk.support.udownload.support.io.AbIoManager
 import com.dhu.usdk.support.udownload.support.queue.SuccessTasks
 import com.dhu.usdk.support.udownload.utils.ULog
+import com.dhu.usdk.support.udownload.utils.application
 import com.dhu.usdk.support.udownload.utils.switchCallbackThreadIfNeed
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -20,6 +22,12 @@ class UTask(
     val isShowNotification: Boolean = true,
     val name: String = taskIndex++.toString()
 ) {
+    companion object {
+        fun setApplication(app: Application) {
+            application = app
+        }
+    }
+
     private var isStart = false
     val downloadQueue = ConcurrentLinkedQueue<Item>()
     val pendingQueue = ConcurrentLinkedQueue<Item>()

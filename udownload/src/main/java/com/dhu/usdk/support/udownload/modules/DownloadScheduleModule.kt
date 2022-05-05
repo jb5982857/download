@@ -67,10 +67,13 @@ class DownloadScheduleModule() {
                 }
 
                 WHAT_SCHEDULE -> {
-                    val lastSuccessLen = successLen
+                    var lastSuccessLen = successLen
                     val needRemoveManagers = ArrayList<AbIoManager>()
                     ioManagers.forEach {
                         successLen += it.getBufferedLen()
+                        val initLen = it.getInitSuccessLen()
+                        successLen += initLen
+                        lastSuccessLen += initLen
                         if (it.isWriteFinish) {
                             needRemoveManagers.add(it)
                         }

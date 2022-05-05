@@ -84,38 +84,10 @@ class DownloadManager private constructor() {
 
         GlobalScope.launch {
             withContext(Dispatchers.IO) {
-                var successLen = task.uTask.currentLen
-//                var totalLen = 0L
+                val successLen = task.uTask.currentLen
                 task.uTask.downloadQueue.forEach {
-                    task.uTask.lockItemTaskIfNeeded()
-                    if (task.uTask.isFinished()) {
-                        return@withContext
-                    }
-//                    totalLen += it.size
-                    //有标记下载成功的，直接放置到成功队列
-                    if (it.state == State.SUCCESS) {
-                        task.uTask.successTasks.addSuccessItem(it)
-                        successLen += it.size
-                        return@forEach
-                    }
-                    //检查本地是否存在同名文件，并且 md5 是否一致
-                    val fileCheckData = it.ioManager.checkFileIfExist(
-                        it.path,
-                        it.md5
-                    )
-                    successLen += fileCheckData.len
-                    if (fileCheckData.exist) {
-                        //本地已经存在，且 md5 匹配
-                        task.uTask.successTasks.addSuccessItem(it)
-                        ULog.i("$it 下载成功")
-                        return@forEach
-                    }
+                    it.ioManager.checkFileIfExist()
                 }
-
-                if (finishTaskIfNeeded(task)) {
-                    return@withContext
-                }
-
                 task.scheduleModule.init(
                     successLen,
                     task.uTask.totalLen,
@@ -123,14 +95,8 @@ class DownloadManager private constructor() {
                 )
 
                 task.uTask.pendingQueue.addAll(task.uTask.downloadQueue)
-                task.uTask.successTasks.forEach {
-                    task.uTask.pendingQueue.remove(it)
-                }
 
-                if (task.uTask.isFinished()) {
-                    return@withContext
-                }
-                task.scheduleModule.start(application!!)
+                task.scheduleModule.start(application)
                 //开始下载
                 task.uTask.pendingQueue.forEach {
                     if (task.uTask.isFinished()) {
@@ -151,8 +117,13 @@ class DownloadManager private constructor() {
                     task.uTask.lockItemTaskIfNeeded()
                 }
                 DownloadItemManager.ItemDownloadState.HTTP_CONNECT_SUCCESS -> {
+                    val isSupportRange = it.value as Boolean?
                     task.uTask.lockItemTaskIfNeeded()
-                    task.scheduleModule.add(item.ioManager)
+                    task.scheduleModule.add(item.ioManager.apply {
+                        if (isSupportRange == false) {
+                            clearInitSuccessLen()
+                        }
+                    })
                 }
 
                 DownloadItemManager.ItemDownloadState.RESULT_SUCCESS -> {

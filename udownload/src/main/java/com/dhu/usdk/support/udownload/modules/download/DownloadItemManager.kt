@@ -23,6 +23,9 @@ class DownloadItemManager {
     @Volatile
     var lastChoiceDataIndex = 0
 
+    /**
+     * 让所有的 Task 都有概率来下载
+     */
     private fun next(): ItemTaskData {
         synchronized(lock) {
             while (itemQueue.isEmpty()) {
@@ -68,33 +71,40 @@ class DownloadItemManager {
             callback(ItemDownloadState.START_DOWNLOAD)
             ConfigCenter.HTTP.download(
                 item.url,
-                item.ioManager.getTempFileSize(item.path)
+                item.ioManager.getTempFileSize()
             ).apply {
-                if (this == null) {
-                    ULog.i("$item 11111下载失败 null")
-                    if (callback(ItemDownloadState.RESULT_FAILED)){
+                if (this.inputStream == null) {
+                    ULog.i("$item 网络下载失败")
+                    if (callback(ItemDownloadState.RESULT_FAILED)) {
                         return@submit
                     }
                 } else {
-                    if (callback(ItemDownloadState.HTTP_CONNECT_SUCCESS)){
+                    if (callback(ItemDownloadState.HTTP_CONNECT_SUCCESS.let {
+                            it.value = this.isSupportRange
+                            return@let it
+                        })) {
                         return@submit
                     }
-                    if (item.ioManager.writeFile(item.path, this, item.md5)
+                    if (item.ioManager.writeFile(
+                            this.inputStream,
+                            this.isSupportRange,
+                            item.md5
+                        )
                     ) {
                         ULog.i(
-                            "$item 11111下载成功"
+                            "$item 下载成功"
                         )
-                        if (callback(ItemDownloadState.RESULT_SUCCESS)){
+                        if (callback(ItemDownloadState.RESULT_SUCCESS)) {
                             return@submit
                         }
                     } else {
-                        ULog.i("$item 11111下载失败")
-                        if (callback(ItemDownloadState.RESULT_FAILED)){
+                        ULog.i("$item 文件读写失败")
+                        if (callback(ItemDownloadState.RESULT_FAILED)) {
                             return@submit
                         }
                     }
                 }
-                if (callback(ItemDownloadState.FINISH)){
+                if (callback(ItemDownloadState.FINISH)) {
                     return@submit
                 }
                 startNextRunnable()
@@ -114,7 +124,7 @@ class DownloadItemManager {
 
     data class ItemTaskData(val item: Item, val downloadingListener: (ItemDownloadState) -> Boolean)
 
-    enum class ItemDownloadState {
+    enum class ItemDownloadState(var value: Any? = null) {
         START_DOWNLOAD, HTTP_CONNECT_SUCCESS, RESULT_FAILED, RESULT_SUCCESS, FINISH
     }
 }

@@ -8,16 +8,7 @@ import java.text.DecimalFormat
 
 val mainHandler = Handler(Looper.getMainLooper())
 
-val application by lazy {
-    try {
-        return@lazy Class.forName("android.app.ActivityThread")
-            .getMethod("currentApplication")
-            .invoke(null) as Application
-    } catch (e: Exception) {
-        e.printStackTrace();
-    }
-    return@lazy null
-}
+lateinit var application: Application
 
 var decimalFormat = DecimalFormat("#.##")
 

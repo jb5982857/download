@@ -20,7 +20,7 @@ class OkhttpFactory : IHttpDownload {
         }.setLevel(HttpLoggingInterceptor.Level.HEADERS)
     }
 
-    override fun download(url: String, start: Long): InputStream? {
+    override fun download(url: String, start: Long): HttpDownloadResponse {
         val request = Request.Builder()
             .addHeader("Range", "bytes=$start-")
             .url(url)
@@ -29,20 +29,20 @@ class OkhttpFactory : IHttpDownload {
             val response = okHttpClient.newCall(request).execute()
             response.body()?.byteStream().apply {
                 return if (this == null) {
-                    null
+                    HttpDownloadResponse(null)
                 } else {
-                    object : BufferedInputStream(this) {
+                    HttpDownloadResponse(object : BufferedInputStream(this) {
                         override fun close() {
                             super.close()
                             ULog.d("close $url")
                             response.close()
                         }
-                    }
+                    }, true)
                 }
             }
         } catch (e: Exception) {
             ULog.e("download error", e)
-            return null
+            return HttpDownloadResponse(null)
         }
     }
 }

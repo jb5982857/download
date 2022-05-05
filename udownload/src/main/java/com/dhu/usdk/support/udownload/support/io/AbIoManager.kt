@@ -24,6 +24,11 @@ abstract class AbIoManager(private val item: Item) {
     @Volatile
     protected var bufferLen = 0L
 
+    //上次已经下好的长度，用于计算速度之类的
+    @Volatile
+    private var initSuccessLen = 0L
+
+
     companion object {
         const val TEMP = ".download"
     }
@@ -34,50 +39,79 @@ abstract class AbIoManager(private val item: Item) {
         return result
     }
 
-    suspend fun checkFileIfExist(filePath: String, md5: String): FileCheckData {
+    fun getInitSuccessLen(): Long {
+        if (initSuccessLen == 0L) {
+            return initSuccessLen
+        }
+        val result = initSuccessLen
+        initSuccessLen = 0L
+        return result
+    }
+
+    fun clearInitSuccessLen() {
+        initSuccessLen = 0L
+    }
+
+    suspend fun checkFileIfExist(): FileCheckData {
+        val filePath = item.path
         return withContext(Dispatchers.IO) {
             val file = File(filePath)
             if (file.exists()) {
                 val fileMd5 = file.md5()
-                if (fileMd5 == md5) {
+                if (fileMd5 == item.md5) {
+                    initSuccessLen = file.length()
                     return@withContext FileCheckData(true, file.length())
                 } else {
-                    ULog.e("file $filePath exist, but the md5 is failed, $fileMd5 vs $md5")
+                    ULog.e("file $filePath exist, but the md5 is failed, $fileMd5 vs ${item.md5}")
                 }
             }
 
             val tempFile = File(getTempPath(filePath))
-            val len = tempFile.length()
-            if (tempFile.exists() && tempFile.md5() == md5) {
-                if (mv2TargetFile(filePath)) {
-                    return@withContext FileCheckData(true, len)
+            if (tempFile.exists()) {
+                val len = tempFile.length()
+                if (tempFile.md5() == item.md5) {
+                    if (mv2TargetFile()) {
+                        initSuccessLen = file.length()
+                        return@withContext FileCheckData(true, len)
+                    }
                 }
+                initSuccessLen = len
+                return@withContext FileCheckData(false, len)
             }
-            return@withContext FileCheckData(false, len)
+
+            initSuccessLen = 0
+            return@withContext FileCheckData(false, 0L)
         }
     }
 
-    fun mv2TargetFile(filePath: String): Boolean {
+    private fun mv2TargetFile(): Boolean {
+        val filePath = item.path
         return moveData(File(getTempPath(filePath)), File(filePath))
     }
 
-    fun writeFile(filePath: String, inputStream: InputStream, md5: String): Boolean {
-        createTempFileIfNeed(filePath)
-        if (!saveFile(getTempPath(filePath), inputStream)) {
+    fun writeFile(
+        inputStream: InputStream,
+        isSupportRange: Boolean,
+        md5: String
+    ): Boolean {
+        val filePath = item.path
+        createTempFileIfNeed()
+        if (!saveFile(getTempPath(filePath), inputStream, isSupportRange)) {
             return false
         }
         isWriteFinish = true
         val tempFile = File(getTempPath(filePath))
         val tempMd5 = tempFile.md5()
         return if (tempFile.md5() == md5) {
-            mv2TargetFile(filePath)
+            mv2TargetFile()
         } else {
             ULog.e("download finish but md5 error , $tempMd5 vs $md5 ")
             false
         }
     }
 
-    private fun createTempFileIfNeed(filePath: String) {
+    private fun createTempFileIfNeed() {
+        val filePath = item.path
         File(filePath).apply {
             if (!exists()) {
                 parentFile?.mkdirs()
@@ -86,8 +120,8 @@ abstract class AbIoManager(private val item: Item) {
         }
     }
 
-    fun getTempFileSize(filePath: String): Long {
-        val file = File(getTempPath(filePath))
+    fun getTempFileSize(): Long {
+        val file = File(getTempPath(item.path))
         return if (file.exists()) {
             file.length()
         } else {
@@ -101,7 +135,11 @@ abstract class AbIoManager(private val item: Item) {
         item.task.lockItemTaskIfNeeded()
     }
 
-    abstract fun saveFile(filePath: String, inputStream: InputStream): Boolean
+    abstract fun saveFile(
+        filePath: String,
+        inputStream: InputStream,
+        isSupportRange: Boolean
+    ): Boolean
 
     protected fun getTempPath(filePath: String): String {
         return filePath + TEMP

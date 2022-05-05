@@ -122,7 +122,7 @@ object NotificationModule {
                 setOnClickPendingIntent(
                     R.id.tv_pause, getPauseActionIntent(id)
                 )
-                setViewVisibility(R.id.tv_pause, View.VISIBLE)
+//                setViewVisibility(R.id.tv_pause, View.VISIBLE)
 
             })
             val notification = builder?.build()
