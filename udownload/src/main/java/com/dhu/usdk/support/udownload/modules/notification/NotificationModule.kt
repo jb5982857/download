@@ -144,8 +144,8 @@ object NotificationModule {
                     R.id.tv_title,
                     context.getString(R.string.udownload_key_download_success)
                 )
+                setTextViewText(R.id.tv_content, "")
                 setViewVisibility(R.id.tv_pause, View.INVISIBLE)
-
             })
             builder?.setAutoCancel(true)
             notificationManager?.notify(RESULT_ID + (id - DEFAULT_ID), builder?.build())

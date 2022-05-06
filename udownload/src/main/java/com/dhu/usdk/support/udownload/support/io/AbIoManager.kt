@@ -144,7 +144,6 @@ abstract class AbIoManager(private val item: Item) {
     }
 
     protected fun lockItemTaskIfNeeded() {
-        ReportModule.instance.report("downloading")
         item.task.lockItemTaskIfNeeded()
     }
 

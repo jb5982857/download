@@ -19,11 +19,11 @@ class SuccessTasks(val task: UTask) : ConcurrentLinkedQueue<Item>() {
                 return true
             }
             val items = ArrayList<Item>()
+            items.add(item)
+            item.resultState = ResultState()
             switchCallbackThreadIfNeed {
                 task.downloadItemFinishListener(item)
             }
-            items.add(item)
-            item.resultState = ResultState()
             item.duplicateItem.forEach {
                 it.resultState = ResultState()
                 switchCallbackThreadIfNeed {

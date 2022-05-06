@@ -89,10 +89,6 @@ class UDownloadService : Service() {
             wakeLock.acquire(10 * 60 * 1000L /*10 minutes*/)
         }
         when (intent.getIntExtra(ACTION, Action.NONE.value)) {
-            Action.NONE.value, Action.KEEP_ALIVE.value -> {
-                ULog.d("keep alive")
-            }
-
             Action.ADD.value -> {
                 uTask?.apply {
                     val uInternalTask =
@@ -126,27 +122,6 @@ class UDownloadService : Service() {
                 }
             }
 
-            Action.PAUSE.value -> {
-                uTask?.apply {
-                    DownloadManager.instance.pause(this@UDownloadService, this)
-                }
-            }
-
-            Action.RESTART.value -> {
-                uTask?.apply {
-                    DownloadManager.instance.restart(this@UDownloadService, this)
-                }
-            }
-
-            Action.STOP.value -> {
-                uTask?.apply {
-                    DownloadManager.instance.stop(this@UDownloadService, this)
-                }
-            }
-
-            Action.RELEASE.value -> {
-                releaseDownload()
-            }
         }
         return START_NOT_STICKY
     }
@@ -170,7 +145,7 @@ class UDownloadService : Service() {
     }
 
     private fun releaseDownload() {
-        DownloadManager.instance.releaseAll(this@UDownloadService)
+        DownloadManager.instance.releaseAll()
     }
 
     private val wakeLock: PowerManager.WakeLock by lazy {
@@ -188,5 +163,5 @@ class UDownloadService : Service() {
 }
 
 enum class Action(val value: Int) {
-    NONE(0), ADD(1), PAUSE(2), STOP(3), RESTART(4), KEEP_ALIVE(5), RELEASE(6)
+    NONE(0), ADD(1)
 }

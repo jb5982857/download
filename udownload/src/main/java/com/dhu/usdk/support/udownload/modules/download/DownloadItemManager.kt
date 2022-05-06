@@ -9,6 +9,10 @@ import com.dhu.usdk.support.udownload.utils.ULog
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
 
+/**
+ * 单个 Task 中文件下载管理类
+ * 这里和外面的 Task 管理器一样，维护类一个生产者消费者模式，当有item进来的时候，在线程池充裕的情况下，进行下载
+ */
 class DownloadItemManager {
     private val lock = Object()
     private val itemQueue = Vector<VectorData>()
@@ -27,7 +31,7 @@ class DownloadItemManager {
     /**
      * 让所有的 Task 都有概率来下载
      */
-    private fun next(): ItemTaskData? {
+    private fun next(): ItemTaskData {
         synchronized(lock) {
             while (itemQueue.isEmpty()) {
                 lock.wait()

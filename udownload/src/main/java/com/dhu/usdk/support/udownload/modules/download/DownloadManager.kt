@@ -19,6 +19,10 @@ import kotlinx.coroutines.withContext
 import java.util.*
 import kotlin.collections.ArrayList
 
+/**
+ * 管理下载 Task 的管理类
+ * 对于 Task 的处理管理维护了一个生产者消费者模式
+ */
 class DownloadManager private constructor() {
     private val taskManager = DownLoadTaskManager()
     private val itemManager by lazy {
@@ -56,18 +60,10 @@ class DownloadManager private constructor() {
         taskManager.addTask(uInternalTask)
     }
 
-    fun restart(context: Context, task: UTask) {
-
-    }
-
-    fun pause(context: Context, task: UTask) {
-    }
-
-    fun stop(context: Context, task: UTask) {
-        release()
-    }
-
-    fun releaseAll(context: Context) {
+    /**
+     * 释放所有的线程池、队列
+     */
+    fun releaseAll() {
         release()
     }
 
@@ -77,9 +73,9 @@ class DownloadManager private constructor() {
         taskManager.releaseData()
     }
 
-    private fun initPoolIfNeeded() {
-    }
-
+    /**
+     * 开始执行需要下载的 task
+     */
     private fun startTask() {
         val task = taskManager.next()
         ULog.d("task $task 开始了")
@@ -123,6 +119,9 @@ class DownloadManager private constructor() {
         }
     }
 
+    /**
+     * 下载单个文件
+     */
     private fun startDownloadItem(task: UInternalTask, item: Item?) {
         item ?: return
         itemManager.set(task, DownloadItemManager.ItemTaskData(item) {
@@ -186,7 +185,7 @@ class DownloadManager private constructor() {
     }
 
     /**
-     * 重试失败的下载
+     * 整体重试失败的下载
      */
     private fun retryTaskIfNeeded(uInternalTask: UInternalTask): Boolean {
         if (!uInternalTask.retry && !uInternalTask.uTask.failedTasks.isEmpty()) {
@@ -219,7 +218,6 @@ data class UInternalTask(
                 if (!retry) {
                     UInternalTaskState.NEED_RETRY
                 } else {
-                    ULog.d("download finish ${uTask.downloadQueue.size}   , ${uTask.successTasks.size}  , ${uTask.failedTasks.size}")
                     scheduleModule.stop()
                     downloadFinish(this, false)
                     UInternalTaskState.FAILED
