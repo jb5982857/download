@@ -3,6 +3,7 @@ package com.dhu.usdk.support.udownload.modules.download
 import android.app.Notification
 import android.content.Context
 import com.dhu.usdk.support.udownload.Item
+import com.dhu.usdk.support.udownload.ResultState
 import com.dhu.usdk.support.udownload.State
 import com.dhu.usdk.support.udownload.UTask
 import com.dhu.usdk.support.udownload.modules.ConfigCenter.TASK_COUNT
@@ -84,17 +85,22 @@ class DownloadManager private constructor() {
 
         GlobalScope.launch {
             withContext(Dispatchers.IO) {
-                val successLen = task.uTask.currentLen
+                var successLen = task.uTask.currentLen
                 task.uTask.downloadQueue.forEach {
-                    it.ioManager.checkFileIfExist()
+                    val fileData = it.ioManager.checkFileIfExist()
+                    if (fileData.exist) {
+                        task.uTask.successTasks.addSuccessItem(it)
+                        successLen += fileData.len
+                    } else {
+                        task.uTask.pendingQueue.add(it)
+                    }
                 }
+
                 task.scheduleModule.init(
                     successLen,
                     task.uTask.totalLen,
                     task.notificationId, task.uTask
                 )
-
-                task.uTask.pendingQueue.addAll(task.uTask.downloadQueue)
 
                 task.scheduleModule.start(application)
                 //开始下载
@@ -127,12 +133,12 @@ class DownloadManager private constructor() {
                 }
 
                 DownloadItemManager.ItemDownloadState.RESULT_SUCCESS -> {
-                    item.state = State.SUCCESS
+                    item.resultState = it.value as ResultState?
                     task.uTask.successTasks.addSuccessItem(item)
                 }
 
                 DownloadItemManager.ItemDownloadState.RESULT_FAILED -> {
-                    item.state = State.FAILED
+                    item.resultState = it.value as ResultState?
                     task.uTask.failedTasks.add(item)
                     task.uTask.downloadItemFinishListener(item)
                 }

@@ -57,7 +57,9 @@ class UDownloadService : Service() {
         }
 
         fun stop(activity: Activity, uTask: UTask) {
-
+            tempConn?.apply {
+                activity.unbindService(this)
+            }
         }
 
         fun stopSelf(context: Context) {

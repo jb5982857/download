@@ -4,6 +4,8 @@ import com.dh.usdk.support.uokhttp.ConnectionPool
 import com.dh.usdk.support.uokhttp.OkHttpClient
 import com.dh.usdk.support.uokhttp.Request
 import com.dh.usdk.support.uokhttp.loginterceptor.HttpLoggingInterceptor
+import com.dhu.usdk.support.udownload.ResultState
+import com.dhu.usdk.support.udownload.common.StateCode
 import com.dhu.usdk.support.udownload.utils.ULog
 import java.io.BufferedInputStream
 import java.io.InputStream
@@ -29,9 +31,14 @@ class OkhttpFactory : IHttpDownload {
             val response = okHttpClient.newCall(request).execute()
             response.body()?.byteStream().apply {
                 return if (this == null) {
-                    HttpDownloadResponse(null)
+                    HttpDownloadResponse(
+                        ResultState(
+                            StateCode.UNKNOWN_NETWORK_ERROR,
+                            "http inputStream is null"
+                        ), null
+                    )
                 } else {
-                    HttpDownloadResponse(object : BufferedInputStream(this) {
+                    HttpDownloadResponse(ResultState(), object : BufferedInputStream(this) {
                         override fun close() {
                             super.close()
                             ULog.d("close $url")
@@ -42,7 +49,12 @@ class OkhttpFactory : IHttpDownload {
             }
         } catch (e: Exception) {
             ULog.e("download error", e)
-            return HttpDownloadResponse(null)
+            return HttpDownloadResponse(
+                ResultState(
+                    StateCode.UNKNOWN_NETWORK_ERROR,
+                    "http exception ${e.message}"
+                ), null
+            )
         }
     }
 }

@@ -1,6 +1,8 @@
 package com.dhu.usdk.support.udownload.support.io
 
 import com.dhu.usdk.support.udownload.Item
+import com.dhu.usdk.support.udownload.ResultState
+import com.dhu.usdk.support.udownload.common.StateCode
 import com.dhu.usdk.support.udownload.modules.download.UInternalTask
 import com.dhu.usdk.support.udownload.utils.ULog
 import java.io.*
@@ -11,7 +13,7 @@ class RandomAccessFileManager(item: Item) :
         filePath: String,
         inputStream: InputStream,
         isSupportRange: Boolean
-    ): Boolean {
+    ): ResultState {
         var raf: RandomAccessFile? = null
         try {
             raf = RandomAccessFile(filePath, "rw")
@@ -31,12 +33,10 @@ class RandomAccessFileManager(item: Item) :
                 bufferLen += len
                 lockItemTaskIfNeeded()
             }
-        } catch (e: FileNotFoundException) {
-            e.printStackTrace()
-            return false
-        } catch (e: IOException) {
-            ULog.e("download 的write error ", e)
-            return false
+            return ResultState(StateCode.SUCCESS, "")
+        } catch (e: Exception) {
+            ULog.e("write file error ", e)
+            return ResultState(StateCode.WRITE_FILE_FAILED, e.message ?: "")
         } finally {
             try {
                 inputStream.close()
@@ -44,6 +44,5 @@ class RandomAccessFileManager(item: Item) :
             } catch (e: Exception) {
             }
         }
-        return true
     }
 }

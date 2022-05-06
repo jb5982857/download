@@ -3,6 +3,7 @@ package com.dhu.usdk.support.udownload
 import android.app.Activity
 import android.app.Application
 import android.content.Context
+import com.dhu.usdk.support.udownload.common.StateCode
 import com.dhu.usdk.support.udownload.modules.ConfigCenter
 import com.dhu.usdk.support.udownload.modules.download.DownloadManager
 import com.dhu.usdk.support.udownload.modules.download.UInternalTask
@@ -125,12 +126,16 @@ class UTask(
         synchronized(itemLock) {
             itemLock.notifyAll()
         }
-        downloadStateChangeListener(State.DOWNLOADING)
+        switchCallbackThreadIfNeed {
+            downloadStateChangeListener(State.DOWNLOADING)
+        }
     }
 
     fun pause() {
         state = State.ON_PAUSE
-        downloadStateChangeListener(State.ON_PAUSE)
+        switchCallbackThreadIfNeed {
+            downloadStateChangeListener(State.ON_PAUSE)
+        }
     }
 
     fun pauseOrResume() {
@@ -142,9 +147,10 @@ class UTask(
     }
 
     fun stop(context: Context) {
-        if (isShowNotification) {
-
-        }
+//        state = State.ON_STOP
+//        switchCallbackThreadIfNeed {
+//            downloadStateChangeListener(State.ON_STOP)
+//        }
     }
 
     fun lockItemTaskIfNeeded() {
@@ -157,9 +163,10 @@ class UTask(
         }
     }
 
-    fun isFinished(): Boolean {
-        return state == State.ON_STOP || state == State.ON_FINISH || state == State.SUCCESS || state == State.FAILED
-    }
+    fun isStop() = state == State.ON_STOP || state == State.ON_FINISH
+
+    fun isFinished() =
+        state == State.ON_STOP || state == State.ON_FINISH || state == State.SUCCESS || state == State.FAILED
 
     fun isDownloading(): Boolean {
         return state == State.DOWNLOADING
@@ -167,13 +174,19 @@ class UTask(
 
 }
 
-enum class State(val value: Int) {
+enum class State(val value: Int, val state: ResultState? = null) {
     READY(1), DOWNLOADING(2), ON_PAUSE(3), ON_STOP(4), CELLULAR_PAUSE(5), ON_FINISH(6), SUCCESS(
         0
     ),
     FAILED(
         -1
     )
+}
+
+data class ResultState(val code: Int = StateCode.SUCCESS, val message: String = "") {
+    fun isSuccessful(): Boolean {
+        return code == StateCode.SUCCESS
+    }
 }
 
 /**
@@ -193,6 +206,11 @@ data class Item(
     val tag: String,
     val priority: Int
 ) {
+    companion object {
+        //最大的重试次数
+        const val RETRY_COUNT_MAX = 3
+    }
+
     //重复的 item ，必须是 url 和 path 相同
     val duplicateItem = ArrayList<Item>()
 
@@ -202,9 +220,21 @@ data class Item(
     //绑定自己的 io 管理器
     val ioManager: AbIoManager = ConfigCenter.getIO(this)
 
+    //重试次数
+    var retryCount = 0
+
+    fun needRetry(): Boolean {
+        return retryCount++ < RETRY_COUNT_MAX
+    }
+
+    fun isSuccessful(): Boolean {
+        return resultState?.isSuccessful() ?: false
+    }
+
     //该条下载的状态
-    var state = State.READY
+    var resultState: ResultState? = null
+
     override fun toString(): String {
-        return "Item(url='$url', path='$path', md5='$md5', size=$size)"
+        return "Item(url='$url', path='$path', md5='$md5', size=$size resultState=$resultState)"
     }
 }

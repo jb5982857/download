@@ -1,7 +1,9 @@
 package com.dhu.usdk.support.udownload.support.io
 
 import com.dhu.usdk.support.udownload.Item
+import com.dhu.usdk.support.udownload.ResultState
 import com.dhu.usdk.support.udownload.UDownloadService
+import com.dhu.usdk.support.udownload.common.StateCode
 import com.dhu.usdk.support.udownload.modules.ReportModule
 import com.dhu.usdk.support.udownload.utils.ULog
 import com.dhu.usdk.support.udownload.utils.application
@@ -93,20 +95,32 @@ abstract class AbIoManager(private val item: Item) {
         inputStream: InputStream,
         isSupportRange: Boolean,
         md5: String
-    ): Boolean {
+    ): ResultState {
         val filePath = item.path
         createTempFileIfNeed()
-        if (!saveFile(getTempPath(filePath), inputStream, isSupportRange)) {
-            return false
+        val saveResult = saveFile(
+            getTempPath(filePath),
+            inputStream,
+            isSupportRange
+        )
+        if (!saveResult.isSuccessful()) {
+            isWriteFinish = true
+            return saveResult
         }
         isWriteFinish = true
         val tempFile = File(getTempPath(filePath))
         val tempMd5 = tempFile.md5()
         return if (tempFile.md5() == md5) {
-            mv2TargetFile()
+            return if (mv2TargetFile()) {
+                ResultState(StateCode.SUCCESS, "")
+            } else {
+                ResultState(StateCode.MOVE_FILE_FAILED, "")
+            }
         } else {
-            ULog.e("download finish but md5 error , $tempMd5 vs $md5 ")
-            false
+            val msg = "download finish but md5 error , $tempMd5 vs $md5 "
+            ULog.e(msg)
+            tempFile.delete()
+            ResultState(StateCode.MD5_ERROR, msg)
         }
     }
 
@@ -139,7 +153,7 @@ abstract class AbIoManager(private val item: Item) {
         filePath: String,
         inputStream: InputStream,
         isSupportRange: Boolean
-    ): Boolean
+    ): ResultState
 
     protected fun getTempPath(filePath: String): String {
         return filePath + TEMP

@@ -61,7 +61,7 @@ class DownloadScheduleModule() {
             }
             when (it.what) {
                 WHAT_ADD -> {
-                    if (it.obj is AbIoManager) {
+                    if (it.obj is AbIoManager && !ioManagers.contains(it.obj)) {
                         ioManagers.add(it.obj as AbIoManager)
                     }
                 }

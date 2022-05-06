@@ -28,6 +28,7 @@ class DownloadItemManager {
      */
     private fun next(): ItemTaskData {
         synchronized(lock) {
+            ULog.d("111111download queue ${itemQueue.size}")
             while (itemQueue.isEmpty()) {
                 lock.wait()
             }
@@ -38,7 +39,7 @@ class DownloadItemManager {
                 lastChoiceDataIndex++
             }
 
-            ULog.d("index $lastChoiceDataIndex , queue size ${itemQueue.size}")
+            ULog.d("111111index $lastChoiceDataIndex , queue size ${itemQueue.size}")
             val vectorData = itemQueue[lastChoiceDataIndex]
             val item = vectorData.queue.poll()!!
             if (vectorData.queue.isEmpty()) {
@@ -63,11 +64,12 @@ class DownloadItemManager {
         }
     }
 
-    private fun startNextRunnable() {
-        val itemData = next()
+    private fun downloadOnce(itemData: ItemTaskData) {
         val item = itemData.item
         val callback = itemData.downloadingListener
+        ULog.d("11111 downloadOnce $item")
         DOWNLOAD_POOL.submit {
+            ULog.d("11111 downloadOnce submit $item")
             callback(ItemDownloadState.START_DOWNLOAD)
             ConfigCenter.HTTP.download(
                 item.url,
@@ -75,7 +77,15 @@ class DownloadItemManager {
             ).apply {
                 if (this.inputStream == null) {
                     ULog.i("$item 网络下载失败")
-                    if (callback(ItemDownloadState.RESULT_FAILED)) {
+                    if (item.needRetry()) {
+                        ULog.w("$item  重试")
+                        downloadOnce(itemData)
+                        return@submit
+                    }
+                    if (callback(ItemDownloadState.RESULT_FAILED.let {
+                            it.value = this.resultState
+                            return@let it
+                        })) {
                         return@submit
                     }
                 } else {
@@ -85,21 +95,32 @@ class DownloadItemManager {
                         })) {
                         return@submit
                     }
-                    if (item.ioManager.writeFile(
-                            this.inputStream,
-                            this.isSupportRange,
-                            item.md5
-                        )
-                    ) {
+                    val writeResult = item.ioManager.writeFile(
+                        this.inputStream,
+                        this.isSupportRange,
+                        item.md5
+                    )
+                    if (writeResult.isSuccessful()) {
                         ULog.i(
                             "$item 下载成功"
                         )
-                        if (callback(ItemDownloadState.RESULT_SUCCESS)) {
+                        if (callback(ItemDownloadState.RESULT_SUCCESS.let {
+                                it.value = writeResult
+                                return@let it
+                            })) {
                             return@submit
                         }
                     } else {
                         ULog.i("$item 文件读写失败")
-                        if (callback(ItemDownloadState.RESULT_FAILED)) {
+                        if (item.needRetry()) {
+                            ULog.w("$item  重试")
+                            downloadOnce(itemData)
+                            return@submit
+                        }
+                        if (callback(ItemDownloadState.RESULT_FAILED.let {
+                                it.value = writeResult
+                                return@let it
+                            })) {
                             return@submit
                         }
                     }
@@ -111,6 +132,12 @@ class DownloadItemManager {
             }
 
         }
+    }
+
+    private fun startNextRunnable() {
+        ULog.d("111111request next")
+        val itemData = next()
+        downloadOnce(itemData)
     }
 
     fun releaseData() {

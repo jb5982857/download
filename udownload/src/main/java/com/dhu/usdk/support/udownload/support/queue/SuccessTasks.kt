@@ -1,6 +1,7 @@
 package com.dhu.usdk.support.udownload.support.queue
 
 import com.dhu.usdk.support.udownload.Item
+import com.dhu.usdk.support.udownload.ResultState
 import com.dhu.usdk.support.udownload.State
 import com.dhu.usdk.support.udownload.UTask
 import com.dhu.usdk.support.udownload.modules.DownloadScheduleModule
@@ -22,9 +23,9 @@ class SuccessTasks(val task: UTask) : ConcurrentLinkedQueue<Item>() {
                 task.downloadItemFinishListener(item)
             }
             items.add(item)
-            item.state = State.SUCCESS
+            item.resultState = ResultState()
             item.duplicateItem.forEach {
-                it.state = State.SUCCESS
+                it.resultState = ResultState()
                 switchCallbackThreadIfNeed {
                     task.downloadItemFinishListener(it)
                 }

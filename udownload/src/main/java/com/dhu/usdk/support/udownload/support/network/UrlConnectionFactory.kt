@@ -1,15 +1,18 @@
 package com.dhu.usdk.support.udownload.support.network
 
+import com.dhu.usdk.support.udownload.ResultState
+import com.dhu.usdk.support.udownload.common.StateCode
 import com.dhu.usdk.support.udownload.utils.ULog
 import java.io.InputStream
-import java.net.HttpURLConnection
-import java.net.URL
+import java.net.*
+import java.util.concurrent.TimeoutException
 
 class UrlConnectionFactory : IHttpDownload {
     override fun download(url: String, start: Long): HttpDownloadResponse {
         try {
             val http = URL(url).openConnection() as HttpURLConnection
-            http.connectTimeout = 5 * 1000
+            http.connectTimeout = 5_000
+            http.readTimeout = 10_000
             http.requestMethod = "GET"
             http.setRequestProperty(
                 "Accept",
@@ -37,15 +40,33 @@ class UrlConnectionFactory : IHttpDownload {
             ULog.i("http response code $responseCode")
             if (responseCode == 206) {
                 //支持断点续传
-                return HttpDownloadResponse(http.inputStream, true)
+                return HttpDownloadResponse(ResultState(), http.inputStream, true)
             } else if (responseCode == 200 || responseCode == 416) {
                 //不支持断点续传
-                return HttpDownloadResponse(http.inputStream, false)
+                return HttpDownloadResponse(ResultState(), http.inputStream, false)
             }
-            return HttpDownloadResponse(null)
+            return HttpDownloadResponse(
+                ResultState(
+                    StateCode.UNKNOWN_NETWORK_ERROR,
+                    "http response code is $responseCode"
+                ), null
+            )
         } catch (e: Exception) {
+            ULog.e("http error", e)
             e.printStackTrace()
-            return HttpDownloadResponse(null)
+            var code = StateCode.UNKNOWN_NETWORK_ERROR
+            if (e is UnknownHostException) {
+                code = StateCode.NETWORK_UNREACHABLE
+            }
+            if (e is SocketTimeoutException || e is ConnectException) {
+                code = StateCode.HTTP_TIME_OUT
+            }
+            return HttpDownloadResponse(
+                ResultState(
+                    code,
+                    "http exception ${e.message}"
+                ), null
+            )
         }
     }
 }
