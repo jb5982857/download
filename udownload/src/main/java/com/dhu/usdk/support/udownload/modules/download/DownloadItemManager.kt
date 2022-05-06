@@ -1,8 +1,7 @@
 package com.dhu.usdk.support.udownload.modules.download
 
 import com.dhu.usdk.support.udownload.Item
-import com.dhu.usdk.support.udownload.UDownloadService
-import com.dhu.usdk.support.udownload.modules.ConfigCenter
+import com.dhu.usdk.support.udownload.common.ConfigCenter
 import com.dhu.usdk.support.udownload.support.thread.DOWNLOAD_POOL
 import com.dhu.usdk.support.udownload.utils.ULog
 import java.util.*

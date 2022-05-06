@@ -6,7 +6,7 @@ import com.dhu.usdk.support.udownload.Item
 import com.dhu.usdk.support.udownload.ResultState
 import com.dhu.usdk.support.udownload.State
 import com.dhu.usdk.support.udownload.UTask
-import com.dhu.usdk.support.udownload.modules.ConfigCenter.TASK_COUNT
+import com.dhu.usdk.support.udownload.common.ConfigCenter.TASK_COUNT
 import com.dhu.usdk.support.udownload.modules.DownloadScheduleModule
 import com.dhu.usdk.support.udownload.support.thread.TASK_POOL
 import com.dhu.usdk.support.udownload.utils.ULog

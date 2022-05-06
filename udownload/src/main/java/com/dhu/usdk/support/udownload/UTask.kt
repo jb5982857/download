@@ -4,7 +4,7 @@ import android.app.Activity
 import android.app.Application
 import android.content.Context
 import com.dhu.usdk.support.udownload.common.StateCode
-import com.dhu.usdk.support.udownload.modules.ConfigCenter
+import com.dhu.usdk.support.udownload.common.ConfigCenter
 import com.dhu.usdk.support.udownload.modules.download.DownloadManager
 import com.dhu.usdk.support.udownload.modules.download.UInternalTask
 import com.dhu.usdk.support.udownload.support.io.AbIoManager

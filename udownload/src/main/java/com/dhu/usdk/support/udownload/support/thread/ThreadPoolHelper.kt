@@ -1,6 +1,6 @@
 package com.dhu.usdk.support.udownload.support.thread
 
-import com.dhu.usdk.support.udownload.modules.ConfigCenter
+import com.dhu.usdk.support.udownload.common.ConfigCenter
 import com.dhu.usdk.support.udownload.utils.ULog
 import java.util.concurrent.*
 

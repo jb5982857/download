@@ -1,4 +1,4 @@
-package com.dhu.usdk.support.udownload.modules
+package com.dhu.usdk.support.udownload.common
 
 import com.dhu.usdk.support.udownload.Item
 import com.dhu.usdk.support.udownload.modules.download.UInternalTask
