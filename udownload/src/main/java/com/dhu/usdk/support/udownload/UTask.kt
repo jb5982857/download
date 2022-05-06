@@ -56,6 +56,13 @@ class UTask(
      * 有文件下载完成，由这里同步
      */
     var downloadItemFinishListener: (item: Item) -> Unit = {}
+        get() {
+            if (isFinished()) {
+                return {}
+            } else {
+                return field
+            }
+        }
 
     /**
      * 下载完成
@@ -147,10 +154,10 @@ class UTask(
     }
 
     fun stop(context: Context) {
-//        state = State.ON_STOP
-//        switchCallbackThreadIfNeed {
-//            downloadStateChangeListener(State.ON_STOP)
-//        }
+        state = State.ON_STOP
+        switchCallbackThreadIfNeed {
+            downloadStateChangeListener(State.ON_STOP)
+        }
     }
 
     fun lockItemTaskIfNeeded() {
@@ -184,9 +191,9 @@ enum class State(val value: Int, val state: ResultState? = null) {
 }
 
 data class ResultState(val code: Int = StateCode.SUCCESS, val message: String = "") {
-    fun isSuccessful(): Boolean {
-        return code == StateCode.SUCCESS
-    }
+    fun isSuccessful() = code == StateCode.SUCCESS
+
+    fun isCancel() = code == StateCode.CANCEL
 }
 
 /**

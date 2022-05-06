@@ -29,6 +29,10 @@ class RandomAccessFileManager(item: Item) :
             while (inputStream.read(buffer).also {
                     len = it
                 } != -1) {
+
+                if (isStop()) {
+                    return ResultState(StateCode.CANCEL)
+                }
                 raf.write(buffer, 0, len)
                 bufferLen += len
                 lockItemTaskIfNeeded()

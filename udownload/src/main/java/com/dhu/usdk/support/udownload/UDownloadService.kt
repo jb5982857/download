@@ -56,24 +56,6 @@ class UDownloadService : Service() {
             return conn
         }
 
-        fun stop(activity: Activity, uTask: UTask) {
-            tempConn?.apply {
-                activity.unbindService(this)
-            }
-        }
-
-        fun stopSelf(context: Context) {
-            isAlive = false
-            context.stopService(Intent(context, UDownloadService::class.java))
-        }
-
-        fun keepAlive(context: Context?) {
-//            if (isAlive) {
-//                context?.startService(Intent(context, UDownloadService::class.java).apply {
-//                    putExtra(ACTION, Action.KEEP_ALIVE.value)
-//                })
-//            }
-        }
     }
 
     private val binder by lazy {
@@ -115,6 +97,7 @@ class UDownloadService : Service() {
                 uTask?.apply {
                     val uInternalTask =
                         UInternalTask(this, downloadFinish = { uInternalTask, isSuccess ->
+                            ULog.d("service download finish $uInternalTask , $isSuccess")
                             uInternalTask.notificationId?.apply {
                                 if (isSuccess) {
                                     NotificationModule.showSuccessNotification(

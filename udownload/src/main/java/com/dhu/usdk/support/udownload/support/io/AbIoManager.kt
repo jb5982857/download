@@ -144,10 +144,11 @@ abstract class AbIoManager(private val item: Item) {
     }
 
     protected fun lockItemTaskIfNeeded() {
-        UDownloadService.keepAlive(application)
         ReportModule.instance.report("downloading")
         item.task.lockItemTaskIfNeeded()
     }
+
+    protected fun isStop() = item.task.isStop()
 
     abstract fun saveFile(
         filePath: String,

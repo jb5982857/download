@@ -9,15 +9,14 @@ import android.util.Log
 object ULog {
     var tag: String = "UDownload"
     var allowV = false
-    var allowD = true
+    var allowD = false
     var allowI = true
     var allowW = true
     var allowE = true
     var allowWtf = true
-    var isDebug = false
 
     private fun generateTag(): String {
-        if (!isDebug) {
+        if (!allowD) {
             return tag ?: ""
         }
         val caller = Thread.currentThread().stackTrace[4]

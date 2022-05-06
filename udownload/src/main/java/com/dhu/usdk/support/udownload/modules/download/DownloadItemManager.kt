@@ -1,7 +1,9 @@
 package com.dhu.usdk.support.udownload.modules.download
 
 import com.dhu.usdk.support.udownload.Item
+import com.dhu.usdk.support.udownload.ResultState
 import com.dhu.usdk.support.udownload.common.ConfigCenter
+import com.dhu.usdk.support.udownload.common.StateCode
 import com.dhu.usdk.support.udownload.support.thread.DOWNLOAD_POOL
 import com.dhu.usdk.support.udownload.utils.ULog
 import java.util.*
@@ -25,20 +27,17 @@ class DownloadItemManager {
     /**
      * 让所有的 Task 都有概率来下载
      */
-    private fun next(): ItemTaskData {
+    private fun next(): ItemTaskData? {
         synchronized(lock) {
-            ULog.d("111111download queue ${itemQueue.size}")
             while (itemQueue.isEmpty()) {
                 lock.wait()
             }
-
             if (lastChoiceDataIndex >= itemQueue.size - 1) {
                 lastChoiceDataIndex = 0
             } else {
                 lastChoiceDataIndex++
             }
 
-            ULog.d("111111index $lastChoiceDataIndex , queue size ${itemQueue.size}")
             val vectorData = itemQueue[lastChoiceDataIndex]
             val item = vectorData.queue.poll()!!
             if (vectorData.queue.isEmpty()) {
@@ -66,23 +65,33 @@ class DownloadItemManager {
     private fun downloadOnce(itemData: ItemTaskData) {
         val item = itemData.item
         val callback = itemData.downloadingListener
-        ULog.d("11111 downloadOnce $item")
         DOWNLOAD_POOL.submit {
-            ULog.d("11111 downloadOnce submit $item")
             callback(ItemDownloadState.START_DOWNLOAD)
+            if (item.task.isStop()) {
+                callback(ItemDownloadState.RESULT_FAILED.let {
+                    it.value = ResultState(StateCode.CANCEL)
+                    return@let it
+                })
+                callback(ItemDownloadState.FINISH)
+                startNextRunnable()
+                return@submit
+            }
             ConfigCenter.HTTP.download(
                 item.url,
                 item.ioManager.getTempFileSize()
             ).apply {
                 if (this.inputStream == null) {
                     ULog.i("$item 网络下载失败")
-                    if (item.needRetry()) {
+                    var failedResultState = this.resultState
+                    if (item.task.isStop()) {
+                        failedResultState = ResultState(StateCode.CANCEL)
+                    } else if (item.needRetry()) {
                         ULog.w("$item  重试")
                         downloadOnce(itemData)
                         return@submit
                     }
                     if (callback(ItemDownloadState.RESULT_FAILED.let {
-                            it.value = this.resultState
+                            it.value = failedResultState
                             return@let it
                         })) {
                         return@submit
@@ -110,12 +119,12 @@ class DownloadItemManager {
                             return@submit
                         }
                     } else {
-                        ULog.i("$item 文件读写失败")
-                        if (item.needRetry()) {
+                        if (!writeResult.isCancel() && item.needRetry()) {
                             ULog.w("$item  重试")
                             downloadOnce(itemData)
                             return@submit
                         }
+                        ULog.i("$item 文件读写失败")
                         if (callback(ItemDownloadState.RESULT_FAILED.let {
                                 it.value = writeResult
                                 return@let it
@@ -134,9 +143,10 @@ class DownloadItemManager {
     }
 
     private fun startNextRunnable() {
-        ULog.d("111111request next")
         val itemData = next()
-        downloadOnce(itemData)
+        itemData?.apply {
+            downloadOnce(itemData)
+        }
     }
 
     fun releaseData() {

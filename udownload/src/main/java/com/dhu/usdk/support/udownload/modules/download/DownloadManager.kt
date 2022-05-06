@@ -43,7 +43,11 @@ class DownloadManager private constructor() {
 
     private fun launchNextTasks() {
         TASK_POOL.submit {
-            startTask()
+            try {
+                startTask()
+            } catch (e: Exception) {
+
+            }
         }
     }
 
@@ -105,6 +109,10 @@ class DownloadManager private constructor() {
                 task.scheduleModule.start(application)
                 //开始下载
                 task.uTask.pendingQueue.forEach {
+                    if (task.uTask.isStop()) {
+                        task.downloadFinish(task, false)
+                        return@withContext
+                    }
                     if (task.uTask.isFinished()) {
                         return@withContext
                     }
@@ -140,15 +148,16 @@ class DownloadManager private constructor() {
                 DownloadItemManager.ItemDownloadState.RESULT_FAILED -> {
                     item.resultState = it.value as ResultState?
                     task.uTask.failedTasks.add(item)
-                    task.uTask.downloadItemFinishListener(item)
+                    switchCallbackThreadIfNeed {
+                        task.uTask.downloadItemFinishListener(item)
+                    }
                 }
 
                 DownloadItemManager.ItemDownloadState.FINISH -> {
-                    ULog.i("item 下载，${item.url},有结束了的，总数 ${task.uTask.downloadQueue.size}, 成功数 ${task.uTask.successTasks.size}, 失败数 ${task.uTask.failedTasks.size}")
                     finishTaskIfNeeded(task)
                 }
             }
-            return@ItemTaskData task.uTask.isFinished()
+            return@ItemTaskData false
 
         })
     }
@@ -210,6 +219,7 @@ data class UInternalTask(
                 if (!retry) {
                     UInternalTaskState.NEED_RETRY
                 } else {
+                    ULog.d("download finish ${uTask.downloadQueue.size}   , ${uTask.successTasks.size}  , ${uTask.failedTasks.size}")
                     scheduleModule.stop()
                     downloadFinish(this, false)
                     UInternalTaskState.FAILED
