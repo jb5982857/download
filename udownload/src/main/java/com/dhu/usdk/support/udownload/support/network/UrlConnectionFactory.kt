@@ -43,11 +43,11 @@ class UrlConnectionFactory : IHttpDownload {
             )
         } catch (e: Exception) {
             ULog.e("http error", e)
+            Thread.sleep(1000)
             e.printStackTrace()
             var code = StateCode.UNKNOWN_NETWORK_ERROR
             if (e is UnknownHostException) {
                 code = StateCode.NETWORK_UNREACHABLE
-                Thread.sleep(1000)
             }
             if (e is SocketTimeoutException || e is ConnectException) {
                 code = StateCode.HTTP_TIME_OUT
