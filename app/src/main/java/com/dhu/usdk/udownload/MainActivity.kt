@@ -22,7 +22,8 @@ import kotlin.system.exitProcess
 class MainActivity : AppCompatActivity() {
     companion object {
         //        const val URL = "https://f52755f1886e823dc1e1fbba521d504d.dlied1.cdntips.net/sqdd.myapp.com/myapp/qqteam/qq_hd/apad/qqhd_hd_5.8.8.3445_release.apk?mkey=615d132ab69630c8&f=0000&cip=182.150.22.61&proto=https"
-        const val URL = "https://inner-cdn.dhgames.cn:12345/ih/9f5d08bd16083e796a6c7ff933613442"
+//        const val URL = "https://inner-cdn.dhgames.cn:12345/ih/9f5d08bd16083e796a6c7ff933613442"
+        const val URL = "https://clifile.dhgames.cn/ih/073a55115a9d06e1acf5bbf2c9c4d33e"
         const val TEST_URL =
             "https://inner-cdn.dhgames.cn:12345/ih/76ff3a21d4ddb5a557fd2872785c9bae"
         const val QQ_URL =
@@ -37,6 +38,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        ULog.allowD = true
 
         dirPath =
             applicationContext.getExternalFilesDir("")?.getAbsolutePath() + "/udownload/"
@@ -61,7 +63,6 @@ class MainActivity : AppCompatActivity() {
     fun btDownload(view: View) {
         var successCount = 0
         var totalCount = 0
-        val downloadCount = 200
         val request = Request.Builder()
             .url(URL)
             .build()
@@ -74,50 +75,52 @@ class MainActivity : AppCompatActivity() {
                 val result = response.body()?.string()
                 val data =
                     Gson().fromJson(result, RootData::class.java)
-                var aIndex = 0
-                var bIndex = 0
+                var totalSize = 0L
                 uTask = UTask(true, "test").apply {
-                    totalCount = downloadCount
-                    add(
-                        Item(
-                            "http://10.0.0.89:8000/ih_release-1.5.0-protect.apk",
-                            dirPath + "test.apk",
-                            "527e46db387adb254f6984e0def6f470",
-                            762174239,
-                            0x11,
-                            "tag",
-                            1
-                        )
-                    )
-//                    data.manifiest.forEach {
-//                        if (aIndex >= downloadCount) {
-//                            return@apply
-//                        }
-//                        aIndex++
-//                        add(
-//                            Item(
-//                                "https://inner-cdn.dhgames.cn:12345/ih/${it.md5}",
-//                                dirPath + it.path, it.md5, it.size, 0x11, "tag", 1
-//                            )
+//                    add(
+//                        Item(
+//                            "http://10.0.0.89:8000/ih_release-1.5.0-protect.apk",
+//                            dirPath + "test.apk",
+//                            "527e46db387adb254f6984e0def6f470",
+//                            762174239,
+//                            0x11,
+//                            "tag",
+//                            1
 //                        )
-//                    }
+//                    )
+                    data.manifiest.forEach {
+                        totalSize += it.size
+                        add(
+                            Item(
+                                "https://clifile.dhgames.cn/ih/${it.md5}",
+                                dirPath + it.path, it.md5, it.size, 0x11, "tag", 1
+                            )
+                        )
+                    }
                 }.apply {
                     var startTime = 0L
                     var totalLength = 0L
                     downloadFinishListener =
                         { tasks: Collection<Item>, successTasks: Collection<Item>, failedTasks: Collection<Item> ->
                             this@MainActivity.runOnUiThread {
-                                appendResult(
-                                    "下载结束了 总数${tasks.size} , 成功数${successTasks.size} , 失败数${failedTasks.size}"
-                                )
+                                (System.currentTimeMillis() - startTime).apply {
+                                    appendResult(
+                                        "下载结束了 总数${tasks.size} , 成功数${successTasks.size} , 失败数${failedTasks.size}  费时 $this, 平均速度 ${totalLength / this}"
+                                    )
+                                }
                             }
 
                         }
                     downloadItemFinishListener = {
 //                        appendResult("item ${it.url} 下载完成")
                         this@MainActivity.runOnUiThread {
+                            if (!it.isSuccessful()) {
+                                appendResult("item $it 下载失败，请检查后重试")
+                                return@runOnUiThread
+                            }
                             successCount++
-                            tv_progress.text = "下载完成数 $successCount, 总数 $totalCount"
+                            tv_progress.text =
+                                "下载完成数 $successCount, 总数 $totalCount"
                         }
                     }
                     downloadProgressListener =
@@ -133,14 +136,14 @@ class MainActivity : AppCompatActivity() {
                     downloadStateChangeListener = {
                         this@MainActivity.runOnUiThread {
                             tv_state.text = "状态 ${it.name}"
-                            if (it == State.READY) {
+                            if (it == State.DOWNLOADING) {
                                 startTime = System.currentTimeMillis()
                             }
                         }
 //                        appendResult("状态变化 $it")
 
                     }
-                    start(0, 762174239, this@MainActivity)
+                    start(0, totalSize, this@MainActivity)
                 }
 
 //                UTask(true, "test2").apply {
@@ -215,7 +218,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun appendResult(msg: String) {
-        Log.d(TAG, msg)
+        tv_result.text = "${tv_result.text}\n$msg"
     }
 
     override fun onDestroy() {

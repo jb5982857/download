@@ -7,6 +7,7 @@ import com.dhu.usdk.support.udownload.common.StateCode
 import com.dhu.usdk.support.udownload.common.ConfigCenter
 import com.dhu.usdk.support.udownload.modules.download.DownloadManager
 import com.dhu.usdk.support.udownload.modules.download.UInternalTask
+import com.dhu.usdk.support.udownload.modules.network.NetWorkStateManager
 import com.dhu.usdk.support.udownload.support.io.AbIoManager
 import com.dhu.usdk.support.udownload.support.queue.SuccessTasks
 import com.dhu.usdk.support.udownload.utils.ULog
@@ -31,10 +32,17 @@ class UTask(
 
     private var isStart = false
     val downloadQueue = ConcurrentLinkedQueue<Item>()
-    val pendingQueue = ConcurrentLinkedQueue<Item>()
+//    val pendingQueue = ConcurrentLinkedQueue<Item>()
     val successTasks = SuccessTasks(this)
     val failedTasks = ConcurrentLinkedQueue<Item>()
     var state: State? = null
+
+    @Volatile
+    var networkState: NetWorkStateManager.State? = null
+    var networkChangeObserver: (NetWorkStateManager.State) -> Unit = {
+        ULog.d("网络状态变化 :$it")
+        networkState = it
+    }
 
     //预设当前长度
     var currentLen = 0L
@@ -114,6 +122,7 @@ class UTask(
         this.currentLen = currentLen
         this.totalLen = totalLen
         ULog.i("开始下载，文件数 ${downloadQueue.size}")
+        NetWorkStateManager.instance.addObserver(networkChangeObserver)
         switchCallbackThreadIfNeed {
             downloadStateChangeListener(State.READY)
         }
@@ -175,10 +184,9 @@ class UTask(
     fun isFinished() =
         state == State.ON_STOP || state == State.ON_FINISH || state == State.SUCCESS || state == State.FAILED
 
-    fun isDownloading(): Boolean {
-        return state == State.DOWNLOADING
-    }
+    fun isDownloading() = state == State.DOWNLOADING
 
+    fun isNetWorkValid() = networkState != NetWorkStateManager.State.NO_NETWORK
 }
 
 enum class State(val value: Int, val state: ResultState? = null) {
@@ -242,6 +250,6 @@ data class Item(
     var resultState: ResultState? = null
 
     override fun toString(): String {
-        return "Item(url='$url', path='$path', md5='$md5', size=$size resultState=$resultState)"
+        return "Item(url='$url', path='$path', md5='$md5', size=$size resultState=$resultState retryCount=$retryCount)"
     }
 }

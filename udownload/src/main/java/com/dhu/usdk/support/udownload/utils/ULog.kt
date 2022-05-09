@@ -35,7 +35,7 @@ object ULog {
     fun d(content: String?) {
         if (allowD) {
             val tag = generateTag()
-            Log.d(tag, content!!)
+            Log.i(tag, content!!)
         }
     }
 

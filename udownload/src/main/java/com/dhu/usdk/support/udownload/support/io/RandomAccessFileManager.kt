@@ -16,6 +16,7 @@ class RandomAccessFileManager(item: Item) :
     ): ResultState {
         var raf: RandomAccessFile? = null
         try {
+//            val startTime = System.currentTimeMillis()
             raf = RandomAccessFile(filePath, "rw")
             val seek = if (isSupportRange) {
                 raf.length()
@@ -37,6 +38,7 @@ class RandomAccessFileManager(item: Item) :
                 bufferLen += len
                 lockItemTaskIfNeeded()
             }
+//            ULog.d("11111文件$filePath 存入完成，费时 ${System.currentTimeMillis() - startTime}")
             return ResultState(StateCode.SUCCESS, "")
         } catch (e: Exception) {
             ULog.e("write file error ", e)

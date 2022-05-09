@@ -54,36 +54,37 @@ abstract class AbIoManager(private val item: Item) {
         initSuccessLen = 0L
     }
 
-    suspend fun checkFileIfExist(): FileCheckData {
+    fun checkFileIfExist(): FileCheckData {
         val filePath = item.path
-        return withContext(Dispatchers.IO) {
-            val file = File(filePath)
-            if (file.exists()) {
-                val fileMd5 = file.md5()
-                if (fileMd5 == item.md5) {
-                    initSuccessLen = file.length()
-                    return@withContext FileCheckData(true, file.length())
-                } else {
-                    ULog.e("file $filePath exist, but the md5 is failed, $fileMd5 vs ${item.md5}")
-                }
+        val file = File(filePath)
+        if (file.exists()) {
+            val fileMd5 = file.md5()
+            if (fileMd5 == item.md5) {
+                ULog.d("file $filePath exist")
+                initSuccessLen = file.length()
+                isWriteFinish = true
+                return FileCheckData(true, file.length())
+            } else {
+                ULog.e("file $filePath exist, but the md5 is failed, $fileMd5 vs ${item.md5}")
             }
-
-            val tempFile = File(getTempPath(filePath))
-            if (tempFile.exists()) {
-                val len = tempFile.length()
-                if (tempFile.md5() == item.md5) {
-                    if (mv2TargetFile()) {
-                        initSuccessLen = file.length()
-                        return@withContext FileCheckData(true, len)
-                    }
-                }
-                initSuccessLen = len
-                return@withContext FileCheckData(false, len)
-            }
-
-            initSuccessLen = 0
-            return@withContext FileCheckData(false, 0L)
         }
+
+        val tempFile = File(getTempPath(filePath))
+        if (tempFile.exists()) {
+            val len = tempFile.length()
+            if (tempFile.md5() == item.md5) {
+                if (mv2TargetFile()) {
+                    initSuccessLen = file.length()
+                    isWriteFinish = true
+                    return FileCheckData(true, len)
+                }
+            }
+            initSuccessLen = len
+            return FileCheckData(false, len)
+        }
+
+        initSuccessLen = 0
+        return FileCheckData(false, 0L)
     }
 
     private fun mv2TargetFile(): Boolean {
@@ -127,9 +128,8 @@ abstract class AbIoManager(private val item: Item) {
     private fun createTempFileIfNeed() {
         val filePath = item.path
         File(filePath).apply {
-            if (!exists()) {
+            if (parentFile?.exists() == false) {
                 parentFile?.mkdirs()
-                createNewFile()
             }
         }
     }

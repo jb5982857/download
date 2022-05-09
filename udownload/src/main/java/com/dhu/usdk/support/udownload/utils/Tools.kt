@@ -29,16 +29,16 @@ fun getFormatSpeed(byteSpeed: Long): String {
     val mb = kb / 1024f
     val gb = mb / 1024f
     if (gb >= 1) {
-        return "${decimalFormat.format(gb)} gb/s"
+        return "${decimalFormat.format(gb)} GB/S"
     }
     if (mb >= 1) {
-        return "${decimalFormat.format(mb)} mb/s"
+        return "${decimalFormat.format(mb)} MB/S"
     }
     if (kb >= 1) {
-        return "${decimalFormat.format(kb)} kb/s"
+        return "${decimalFormat.format(kb)} KB/S"
     }
 
-    return "${decimalFormat.format(byteSpeed)} b/s"
+    return "${decimalFormat.format(byteSpeed)} B/S"
 }
 
 

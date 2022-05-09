@@ -22,6 +22,7 @@ import kotlin.collections.ArrayList
 /**
  * 管理下载 Task 的管理类
  * 对于 Task 的处理管理维护了一个生产者消费者模式
+ * 采用生产者消费者的原因是因为，不能一次性的扔给线程池，不然不方便操作停止
  */
 class DownloadManager private constructor() {
     private val taskManager = DownLoadTaskManager()
@@ -85,16 +86,16 @@ class DownloadManager private constructor() {
 
         GlobalScope.launch {
             withContext(Dispatchers.IO) {
-                var successLen = task.uTask.currentLen
-                task.uTask.downloadQueue.forEach {
-                    val fileData = it.ioManager.checkFileIfExist()
-                    if (fileData.exist) {
-                        task.uTask.successTasks.addSuccessItem(it)
-                        successLen += fileData.len
-                    } else {
-                        task.uTask.pendingQueue.add(it)
-                    }
-                }
+                val successLen = task.uTask.currentLen
+//                task.uTask.downloadQueue.forEach {
+//                    val fileData = it.ioManager.checkFileIfExist()
+//                    if (fileData.exist) {
+//                        task.uTask.successTasks.addSuccessItem(it)
+//                        successLen += fileData.len
+//                    } else {
+//                        task.uTask.pendingQueue.add(it)
+//                    }
+//                }
 
                 task.scheduleModule.init(
                     successLen,
@@ -104,7 +105,7 @@ class DownloadManager private constructor() {
 
                 task.scheduleModule.start(application)
                 //开始下载
-                task.uTask.pendingQueue.forEach {
+                task.uTask.downloadQueue.forEach {
                     if (task.uTask.isStop()) {
                         task.downloadFinish(task, false)
                         return@withContext
@@ -153,6 +154,7 @@ class DownloadManager private constructor() {
                 }
 
                 DownloadItemManager.ItemDownloadState.FINISH -> {
+                    ULog.d("item 下载，${item.url},有结束了的，总数 ${task.uTask.downloadQueue.size}, 成功数 ${task.uTask.successTasks.size}, 失败数 ${task.uTask.failedTasks.size}")
                     finishTaskIfNeeded(task)
                 }
             }
