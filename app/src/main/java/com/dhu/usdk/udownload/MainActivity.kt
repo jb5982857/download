@@ -34,6 +34,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var dirPath: String
 
     private var uTask: UTask? = null
+    private var isDownload = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,6 +64,10 @@ class MainActivity : AppCompatActivity() {
     fun btDownload(view: View) {
         var successCount = 0
         var totalCount = 0
+        if (isDownload) {
+            return
+        }
+        isDownload = true
         val request = Request.Builder()
             .url(URL)
             .build()
@@ -115,7 +120,8 @@ class MainActivity : AppCompatActivity() {
 //                        appendResult("item ${it.url} 下载完成")
                         this@MainActivity.runOnUiThread {
                             if (!it.isSuccessful()) {
-                                appendResult("item $it 下载失败，请检查后重试")
+                                uTask?.stop(this@MainActivity)
+                                appendResult("item $it 下载失败，下载关闭")
                                 return@runOnUiThread
                             }
                             successCount++
