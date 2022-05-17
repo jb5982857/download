@@ -6,4 +6,5 @@
     <string name="udownload_key_downloading">下载中</string>
     <string name="udownload_key_download_failed">下载失败</string>
     <string name="udownload_key_download_success">下载成功</string>
+    <string name="udownload_progress_content">%s,    %s</string>
 </resources>

@@ -70,6 +70,7 @@ class DownloadItemManager {
     private fun downloadOnce(itemData: ItemTaskData) {
         val item = itemData.item
         val callback = itemData.downloadingListener
+        itemData.item.ioManager.isWriteFinish = false
         DOWNLOAD_POOL.submit {
             callback(ItemDownloadState.START_DOWNLOAD)
             //如果调用停止了，就直接不用下载，返回失败

@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.Message
+import com.dhu.usdk.support.udownload.R
 import com.dhu.usdk.support.udownload.UTask
 import com.dhu.usdk.support.udownload.support.io.AbIoManager
 import com.dhu.usdk.support.udownload.utils.*
@@ -69,12 +70,14 @@ class DownloadScheduleModule() {
                 WHAT_SCHEDULE -> {
                     var lastSuccessLen = successLen
                     val needRemoveManagers = ArrayList<AbIoManager>()
+                    ULog.d("schedule ${ioManagers.size}")
                     ioManagers.forEach {
                         successLen += it.getBufferedLen()
                         val initLen = it.getInitSuccessLen()
                         successLen += initLen
                         lastSuccessLen += initLen
                         if (it.isWriteFinish) {
+                            ULog.d("need remove $it")
                             needRemoveManagers.add(it)
                         }
                     }
@@ -94,7 +97,11 @@ class DownloadScheduleModule() {
                             context,
                             this,
                             progress.toInt(),
-                            "下载进度 ${decimalFormat.format(progress)}% , 下载速度 $formatSpeed"
+                            String.format(
+                                application.getString(R.string.udownload_progress_content),
+                                "${decimalFormat.format(progress)}%",
+                                formatSpeed
+                            )
                         )
                     }
                     switchCallbackThreadIfNeed {
@@ -125,6 +132,7 @@ class DownloadScheduleModule() {
     }
 
     fun add(ioManager: AbIoManager) {
+        ULog.d("add $ioManager")
         Message.obtain(mHandler, WHAT_ADD, ioManager).sendToTarget()
     }
 

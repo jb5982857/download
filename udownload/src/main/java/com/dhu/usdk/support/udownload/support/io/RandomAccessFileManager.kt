@@ -16,7 +16,6 @@ class RandomAccessFileManager(item: Item) :
     ): ResultState {
         var raf: RandomAccessFile? = null
         try {
-//            val startTime = System.currentTimeMillis()
             raf = RandomAccessFile(filePath, "rw")
             val seek = if (isSupportRange) {
                 raf.length()
@@ -26,11 +25,12 @@ class RandomAccessFileManager(item: Item) :
             ULog.d("$filePath the seek is $seek")
             raf.seek(seek)
             var len: Int
-            val buffer = ByteArray(1024 * 1024)
+            //Android系统使用 Okhttp Okio 限制死了8k/s
+            val buffer = ByteArray(8 * 1024)
             while (inputStream.read(buffer).also {
                     len = it
                 } != -1) {
-
+                ULog.e("write buffer $len")
                 if (isStop()) {
                     return ResultState(StateCode.CANCEL)
                 }
@@ -38,7 +38,6 @@ class RandomAccessFileManager(item: Item) :
                 bufferLen += len
                 lockItemTaskIfNeeded()
             }
-//            ULog.d("11111文件$filePath 存入完成，费时 ${System.currentTimeMillis() - startTime}")
             return ResultState(StateCode.SUCCESS, "")
         } catch (e: Exception) {
             ULog.e("write file error ", e)

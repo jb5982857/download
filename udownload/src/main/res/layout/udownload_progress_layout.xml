@@ -10,14 +10,14 @@
 
     <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp">
 
         <TextView
             android:id="@+id/tv_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:layout_marginEnd="5dp"
+            android:layout_centerVertical="true"
             android:padding="3dp"
             android:text=""
             android:textColor="@color/udownload_title_color"
@@ -28,7 +28,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentEnd="true"
-            android:layout_marginTop="10dp"
+            android:layout_centerVertical="true"
             android:padding="3dp"
             android:text="@string/udownload_ready_text"
             android:textColor="@color/udownload_content_color"

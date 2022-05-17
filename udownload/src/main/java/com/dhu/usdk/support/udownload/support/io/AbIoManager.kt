@@ -62,6 +62,7 @@ abstract class AbIoManager(private val item: Item) {
             if (fileMd5 == item.md5) {
                 ULog.d("file $filePath exist")
                 initSuccessLen = file.length()
+                ULog.d("2222222")
                 isWriteFinish = true
                 return FileCheckData(true, file.length())
             } else {
@@ -75,6 +76,7 @@ abstract class AbIoManager(private val item: Item) {
             if (tempFile.md5() == item.md5) {
                 if (mv2TargetFile()) {
                     initSuccessLen = file.length()
+                    ULog.d("3333333")
                     isWriteFinish = true
                     return FileCheckData(true, len)
                 }
@@ -105,9 +107,11 @@ abstract class AbIoManager(private val item: Item) {
             isSupportRange
         )
         if (!saveResult.isSuccessful()) {
+            ULog.d("11111111")
             isWriteFinish = true
             return saveResult
         }
+        ULog.d("444444444")
         isWriteFinish = true
         val tempFile = File(getTempPath(filePath))
         val tempMd5 = tempFile.md5()

@@ -32,7 +32,6 @@ class UTask(
 
     private var isStart = false
     val downloadQueue = ConcurrentLinkedQueue<Item>()
-//    val pendingQueue = ConcurrentLinkedQueue<Item>()
     val successTasks = SuccessTasks(this)
     val failedTasks = ConcurrentLinkedQueue<Item>()
     var state: State? = null
@@ -164,6 +163,9 @@ class UTask(
 
     fun stop(context: Context) {
         state = State.ON_STOP
+        synchronized(itemLock) {
+            itemLock.notifyAll()
+        }
         switchCallbackThreadIfNeed {
             downloadStateChangeListener(State.ON_STOP)
         }
@@ -211,6 +213,7 @@ data class ResultState(val code: Int = StateCode.SUCCESS, val message: String = 
  * size -> 文件大小，单位 byte
  * userData -> 用户的信息，C# 地址
  * tag -> 透传的数据
+ * extendData -> 扩展参数
  */
 data class Item(
     val url: String,
@@ -219,11 +222,12 @@ data class Item(
     val size: Long,
     val userData: Int,
     val tag: String,
-    val priority: Int
+    val priority: Int,
+    val extendData: String
 ) {
     companion object {
         //最大的重试次数
-        const val RETRY_COUNT_MAX = 3
+        const val RETRY_COUNT_MAX = 5
     }
 
     //重复的 item ，必须是 url 和 path 相同

@@ -1,6 +1,7 @@
 package com.dhu.usdk.support.udownload.utils
 
 import android.app.Application
+import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.Looper
@@ -10,13 +11,29 @@ val mainHandler = Handler(Looper.getMainLooper())
 
 lateinit var application: Application
 
-var decimalFormat = DecimalFormat("#.##")
+var decimalFormat = DecimalFormat("#0.00")
 
 /**
  * 获取byte/s 的速度
  */
 fun getByteSpeed(size: Long, time: Int): Long {
     return size / time
+}
+
+fun versionCheck(target: Int = 0, build: Int = 0): Boolean {
+    if (target != 0) {
+        if (application.applicationInfo.targetSdkVersion < target) {
+            return false
+        }
+    }
+
+    if (build != 0) {
+        if (Build.VERSION.SDK_INT < build) {
+            return false
+        }
+    }
+
+    return true
 }
 
 /**

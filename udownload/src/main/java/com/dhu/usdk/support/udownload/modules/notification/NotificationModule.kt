@@ -15,6 +15,7 @@ import com.dhu.usdk.support.udownload.modules.notification.ButtonClickReceive
 import com.dhu.usdk.support.udownload.utils.ULog
 import com.dhu.usdk.support.udownload.utils.application
 import com.dhu.usdk.support.udownload.utils.switchUiThreadIfNeeded
+import com.dhu.usdk.support.udownload.utils.versionCheck
 
 
 object NotificationModule {
@@ -33,11 +34,17 @@ object NotificationModule {
 
     private fun getPauseActionIntent(notificationId: Int): PendingIntent {
         return PendingIntent.getBroadcast(
-            application, 0,
+            application,
+            0,
             Intent(application, ButtonClickReceive::class.java).apply {
                 putExtra(ButtonClickReceive.KEY_ACTION, ButtonClickReceive.PAUSE)
                 putExtra(ButtonClickReceive.NOTIFICATION_ID, notificationId)
-            }, PendingIntent.FLAG_UPDATE_CURRENT
+            },
+            if (versionCheck(
+                    Build.VERSION_CODES.S,
+                    Build.VERSION_CODES.S
+                )
+            ) PendingIntent.FLAG_MUTABLE else PendingIntent.FLAG_UPDATE_CURRENT
         )
     }
 
@@ -83,7 +90,11 @@ object NotificationModule {
         val pendingIntent =
             PendingIntent.getActivity(
                 context, 1, activityIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT
+                if (versionCheck(
+                        Build.VERSION_CODES.S,
+                        Build.VERSION_CODES.S
+                    )
+                ) PendingIntent.FLAG_MUTABLE else PendingIntent.FLAG_UPDATE_CURRENT
             )
         builder.setContentIntent(pendingIntent)
         return builder
@@ -104,6 +115,21 @@ object NotificationModule {
             ULog.d("update Progress isAlive ${UDownloadService.isAlive} , id $id, progress $progress, content $content")
             initBuildIfNeeded(context)
             builder?.setSilent(true)
+            var iconId = 0
+            context.resources.getIdentifier(
+                "notification_icon",
+                "drawable",
+                context.packageName
+            ).apply {
+                iconId = if (this == 0) {
+                    context.applicationInfo.icon
+                } else {
+                    this
+                }
+            }
+            if (iconId != 0) {
+                builder?.setSmallIcon(iconId)
+            }
             builder?.setContent(getContentView(context).apply {
                 setProgressBar(R.id.pb_progress, 100, progress, false)
                 setTextViewText(
@@ -112,6 +138,9 @@ object NotificationModule {
                 )
                 setTextViewText(R.id.tv_content, content)
 
+//                if (iconId != 0) {
+//                    setImageViewResource(R.id.iv_icon, iconId)
+//                }
                 setTextViewText(
                     R.id.tv_pause,
                     if (DownloadTaskLifecycle.instance.findTaskByNotificationId(id)?.uTask?.state == State.ON_PAUSE) context.getString(
@@ -145,7 +174,7 @@ object NotificationModule {
                     context.getString(R.string.udownload_key_download_success)
                 )
                 setTextViewText(R.id.tv_content, "")
-                setViewVisibility(R.id.tv_pause, View.INVISIBLE)
+//                setViewVisibility(R.id.tv_pause, View.INVISIBLE)
             })
             builder?.setAutoCancel(true)
             notificationManager?.notify(RESULT_ID + (id - DEFAULT_ID), builder?.build())
@@ -165,7 +194,7 @@ object NotificationModule {
                 )
                 setTextViewText(R.id.tv_content, "")
 
-                setViewVisibility(R.id.tv_pause, View.INVISIBLE)
+//                setViewVisibility(R.id.tv_pause, View.INVISIBLE)
 
             })
             builder?.setAutoCancel(true)
