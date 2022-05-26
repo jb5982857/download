@@ -17,10 +17,42 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+//        release {
+//            storePassword="droidhang"
+//            keyPassword="droidhang"
+//            keyAlias="droidhang"
+//            storeFile=file("../keystore/dh.keystore")
+////            v1SigningEnabled true
+////            v2SigningEnabled false//设置是否包含v1和v2只勾选v1签名并不会影响什么，但是在7.0上不会使用更安全的验证方式
+//            //只勾选V2签名7.0以下会直接安装完显示未安装，7.0以上则使用了V2的方式验证
+//        }
+//        debug {
+//            storePassword="droidhang"
+//            keyPassword="droidhang"
+//            keyAlias="droidhang"
+//            storeFile=file("../keystore/dh.keystore")
+////            v1SigningEnabled true
+////            v2SigningEnabled false//设置是否包含v1和v2只勾选v1签名并不会影响什么，但是在7.0上不会使用更安全的验证方式
+//            //只勾选V2签名7.0以下会直接安装完显示未安装，7.0以上则使用了V2的方式验证
+//        }
+
+        ih {
+            storePassword = "123456"
+            keyPassword = "123456"
+            keyAlias = "ihgames"
+            storeFile = file("/Users/jiangbo/Documents/bpc_sdk/USDK/keystore/ih.jks")
+            v1SigningEnabled true
+            v2SigningEnabled true//设置是否包含v1和v2只勾选v1签名并不会影响什么，但是在7.0上不会使用更安全的验证方式
+            //只勾选V2签名7.0以下会直接安装完显示未安装，7.0以上则使用了V2的方式验证
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.ih
         }
     }
     compileOptions {

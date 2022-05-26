@@ -21,7 +21,7 @@ import kotlin.collections.ArrayList
 var taskIndex = 0
 
 class UTask(
-    val isShowNotification: Boolean = true,
+    private val isShowNotification: Boolean = true,
     val name: String = taskIndex++.toString()
 ) {
     companion object {
@@ -92,19 +92,19 @@ class UTask(
             }
             return this
         }
-        val existItem = downloadQueue.find { it.path == item.path }
-        if (existItem != null) {
-            if (existItem.url == item.url) {
-                "item $item has the same url and path as $existItem".apply {
-                    ULog.e(this)
-                }
-                existItem.duplicateItem.add(item)
-            } else {
-                "item $item has the same path as $existItem,but the url is not the same ,it will error occur".apply {
-                    ULog.e(this)
-                }
-            }
-        }
+//        val existItem = downloadQueue.find { it.path == item.path }
+//        if (existItem != null) {
+//            if (existItem.url == item.url) {
+//                "item $item has the same url and path as $existItem".apply {
+//                    ULog.e(this)
+//                }
+//                existItem.duplicateItem.add(item)
+//            } else {
+//                "item $item has the same path as $existItem,but the url is not the same ,it will error occur".apply {
+//                    ULog.e(this)
+//                }
+//            }
+//        }
         item.md5 = item.md5.toLowerCase(Locale.ROOT)
         item.task = this
         downloadQueue.add(item)
@@ -137,6 +137,9 @@ class UTask(
     }
 
     fun restart() {
+        if (isFinished()) {
+            return
+        }
         state = State.DOWNLOADING
         synchronized(itemLock) {
             itemLock.notifyAll()
@@ -244,6 +247,10 @@ data class Item(
 
     fun needRetry(): Boolean {
         return retryCount++ < RETRY_COUNT_MAX
+    }
+
+    fun isInRetry(): Boolean {
+        return retryCount != 0
     }
 
     fun isSuccessful(): Boolean {

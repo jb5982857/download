@@ -133,11 +133,11 @@ class DownloadManager private constructor() {
                 DownloadItemManager.ItemDownloadState.HTTP_CONNECT_SUCCESS -> {
                     val isSupportRange = it.value as Boolean?
                     task.uTask.lockItemTaskIfNeeded()
-                    task.scheduleModule.add(item.ioManager.apply {
+                    item.ioManager.apply {
                         if (isSupportRange == false) {
                             clearInitSuccessLen()
                         }
-                    })
+                    }.setSchedule(task.scheduleModule)
                 }
 
                 DownloadItemManager.ItemDownloadState.RESULT_SUCCESS -> {

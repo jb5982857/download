@@ -22,22 +22,22 @@ val downloadHandlerThread by lazy {
 }
 
 class DownloadScheduleModule() {
-    private val ioManagers = ConcurrentLinkedQueue<AbIoManager>()
-
     @Volatile
     private var isStart = false
     private var mHandler: Handler? = null
 
     private var successLen: Long = 0L
+    private var bufferLen: Long = 0L
     private var totalLen: Long = 0L
     private var notificationId: Int? = null
     private var task: UTask? = null
 
     companion object {
         const val DELAY_TIME = 1_000L
-        const val WHAT_ADD = 20
         const val WHAT_SCHEDULE = 30
         const val WHAT_STOP = 40
+        const val WHAT_ADD_PROGRESS = 50
+        const val WHAT_ADD_INIT_SIZE = 60
     }
 
     fun init(successLen: Long, totalLen: Long, notificationId: Int?, task: UTask) {
@@ -61,33 +61,26 @@ class DownloadScheduleModule() {
                 return@Handler true
             }
             when (it.what) {
-                WHAT_ADD -> {
-                    if (it.obj is AbIoManager && !ioManagers.contains(it.obj)) {
-                        ioManagers.add(it.obj as AbIoManager)
+                WHAT_ADD_PROGRESS -> {
+                    if (it.obj is Int) {
+                        bufferLen += it.obj as Int
+                    }
+                }
+
+                WHAT_ADD_INIT_SIZE -> {
+                    if (it.obj is Long) {
+                        (it.obj as Long).apply {
+                            successLen += this
+                        }
                     }
                 }
 
                 WHAT_SCHEDULE -> {
-                    var lastSuccessLen = successLen
-                    val needRemoveManagers = ArrayList<AbIoManager>()
-                    ULog.d("schedule ${ioManagers.size}")
-                    ioManagers.forEach {
-                        successLen += it.getBufferedLen()
-                        val initLen = it.getInitSuccessLen()
-                        successLen += initLen
-                        lastSuccessLen += initLen
-                        if (it.isWriteFinish) {
-                            ULog.d("need remove $it")
-                            needRemoveManagers.add(it)
-                        }
-                    }
-                    ULog.d("success lenth $successLen, last $lastSuccessLen")
-
                     val byteSpeed = getByteSpeed(
-                        successLen - lastSuccessLen,
+                        bufferLen,
                         (DELAY_TIME / 1000).toInt()
                     )
-
+                    successLen += bufferLen
                     val formatSpeed = getFormatSpeed(byteSpeed)
                     ULog.d("byteSpeed $byteSpeed $formatSpeed")
                     notificationId?.apply {
@@ -115,13 +108,13 @@ class DownloadScheduleModule() {
                             )
                         }
                     }
-                    needRemoveManagers.forEach {
-                        ioManagers.remove(it)
-                    }
+
                     if (isStart) {
                         task?.lockItemTaskIfNeeded()
                         mHandler?.sendEmptyMessageDelayed(WHAT_SCHEDULE, DELAY_TIME)
                     }
+
+                    bufferLen = 0L
                 }
             }
 
@@ -131,14 +124,18 @@ class DownloadScheduleModule() {
         mHandler?.sendEmptyMessageDelayed(WHAT_SCHEDULE, DELAY_TIME)
     }
 
-    fun add(ioManager: AbIoManager) {
-        ULog.d("add $ioManager")
-        Message.obtain(mHandler, WHAT_ADD, ioManager).sendToTarget()
+    fun addProgress(progress: Int) {
+        Message.obtain(mHandler, WHAT_ADD_PROGRESS, progress).sendToTarget()
+    }
+
+    fun addInitSize(size: Long) {
+        Message.obtain(mHandler, WHAT_ADD_INIT_SIZE, size).sendToTarget()
     }
 
     fun stop() {
         isStart = false
         mHandler?.removeMessages(WHAT_SCHEDULE)
-        mHandler?.removeMessages(WHAT_ADD)
+        mHandler?.removeMessages(WHAT_ADD_PROGRESS)
+        mHandler?.removeMessages(WHAT_ADD_INIT_SIZE)
     }
 }

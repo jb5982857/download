@@ -4,6 +4,7 @@ import com.dhu.usdk.support.udownload.Item
 import com.dhu.usdk.support.udownload.ResultState
 import com.dhu.usdk.support.udownload.UDownloadService
 import com.dhu.usdk.support.udownload.common.StateCode
+import com.dhu.usdk.support.udownload.modules.DownloadScheduleModule
 import com.dhu.usdk.support.udownload.modules.ReportModule
 import com.dhu.usdk.support.udownload.utils.ULog
 import com.dhu.usdk.support.udownload.utils.application
@@ -21,10 +22,13 @@ import java.util.*
 abstract class AbIoManager(private val item: Item) {
     //该 item 是否完成到本地的写入
     var isWriteFinish = false
-
-    //新下载且写入的长度
-    @Volatile
-    protected var bufferLen = 0L
+        set(value) {
+            if (value) {
+                scheduleModule = null
+            }
+            field = value
+        }
+    private var scheduleModule: DownloadScheduleModule? = null
 
     //上次已经下好的长度，用于计算速度之类的
     @Volatile
@@ -35,23 +39,17 @@ abstract class AbIoManager(private val item: Item) {
         const val TEMP = ".download"
     }
 
-    fun getBufferedLen(): Long {
-        val result = bufferLen
-        bufferLen = 0
-        return result
-    }
-
-    fun getInitSuccessLen(): Long {
-        if (initSuccessLen == 0L) {
-            return initSuccessLen
-        }
-        val result = initSuccessLen
-        initSuccessLen = 0L
-        return result
+    fun setSchedule(scheduleModule: DownloadScheduleModule) {
+        scheduleModule.addInitSize(initSuccessLen)
+        this.scheduleModule = scheduleModule
     }
 
     fun clearInitSuccessLen() {
         initSuccessLen = 0L
+    }
+
+    fun addProgress(progress: Int) {
+        scheduleModule?.addProgress(progress)
     }
 
     fun checkFileIfExist(): FileCheckData {
@@ -60,9 +58,7 @@ abstract class AbIoManager(private val item: Item) {
         if (file.exists()) {
             val fileMd5 = file.md5()
             if (fileMd5 == item.md5) {
-                ULog.d("file $filePath exist")
                 initSuccessLen = file.length()
-                ULog.d("2222222")
                 isWriteFinish = true
                 return FileCheckData(true, file.length())
             } else {
@@ -76,7 +72,6 @@ abstract class AbIoManager(private val item: Item) {
             if (tempFile.md5() == item.md5) {
                 if (mv2TargetFile()) {
                     initSuccessLen = file.length()
-                    ULog.d("3333333")
                     isWriteFinish = true
                     return FileCheckData(true, len)
                 }
@@ -107,11 +102,9 @@ abstract class AbIoManager(private val item: Item) {
             isSupportRange
         )
         if (!saveResult.isSuccessful()) {
-            ULog.d("11111111")
             isWriteFinish = true
             return saveResult
         }
-        ULog.d("444444444")
         isWriteFinish = true
         val tempFile = File(getTempPath(filePath))
         val tempMd5 = tempFile.md5()

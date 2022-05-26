@@ -72,28 +72,31 @@ class DownloadItemManager {
         val callback = itemData.downloadingListener
         itemData.item.ioManager.isWriteFinish = false
         DOWNLOAD_POOL.submit {
-            callback(ItemDownloadState.START_DOWNLOAD)
-            //如果调用停止了，就直接不用下载，返回失败
-            if (item.task.isStop()) {
-                callback(ItemDownloadState.RESULT_FAILED.let {
-                    it.value = ResultState(StateCode.CANCEL)
-                    return@let it
-                })
-                callback(ItemDownloadState.FINISH)
-                startNextRunnable()
-                return@submit
-            }
-            //如果文件本身就存在，则跳过下载
-            val checkResult = item.ioManager.checkFileIfExist()
-            if (checkResult.exist) {
-                callback(ItemDownloadState.HTTP_CONNECT_SUCCESS)
-                callback(ItemDownloadState.RESULT_SUCCESS.let {
-                    it.value = ResultState()
-                    return@let it
-                })
-                callback(ItemDownloadState.FINISH)
-                startNextRunnable()
-                return@submit
+            if (!itemData.item.isInRetry()) {
+                //第一次下砸，需要判断文件状态，重新的就不用了
+                callback(ItemDownloadState.START_DOWNLOAD)
+                //如果调用停止了，就直接不用下载，返回失败
+                if (item.task.isStop()) {
+                    callback(ItemDownloadState.RESULT_FAILED.let {
+                        it.value = ResultState(StateCode.CANCEL)
+                        return@let it
+                    })
+                    callback(ItemDownloadState.FINISH)
+                    startNextRunnable()
+                    return@submit
+                }
+                //如果文件本身就存在，则跳过下载
+                val checkResult = item.ioManager.checkFileIfExist()
+                if (checkResult.exist) {
+                    callback(ItemDownloadState.HTTP_CONNECT_SUCCESS)
+                    callback(ItemDownloadState.RESULT_SUCCESS.let {
+                        it.value = ResultState()
+                        return@let it
+                    })
+                    callback(ItemDownloadState.FINISH)
+                    startNextRunnable()
+                    return@submit
+                }
             }
             //开始下载
             ConfigCenter.HTTP.download(
@@ -115,10 +118,12 @@ class DownloadItemManager {
                         return@let it
                     })
                 } else {
-                    callback(ItemDownloadState.HTTP_CONNECT_SUCCESS.let {
-                        it.value = this.isSupportRange
-                        return@let it
-                    })
+                    if (!item.isInRetry()) {
+                        callback(ItemDownloadState.HTTP_CONNECT_SUCCESS.let {
+                            it.value = this.isSupportRange
+                            return@let it
+                        })
+                    }
                     val writeResult = item.ioManager.writeFile(
                         this.inputStream,
                         this.isSupportRange,

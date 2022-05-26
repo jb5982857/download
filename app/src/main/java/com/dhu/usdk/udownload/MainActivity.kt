@@ -47,17 +47,20 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun btBigFileDownload(view: View) {
+        val apkPath = applicationContext.getExternalFilesDir("")
+            ?.absolutePath + "/udownload2/qq.apk"
         UTask(true, "bigFile").apply {
             add(
                 Item(
                     QQ_URL,
                     applicationContext.getExternalFilesDir("")
                         ?.absolutePath + "/udownload2/qq.apk",
-                    "3975e6512672dd620ff716f3b2a788a4", 158351948, 1, "111", 0
+                    "3975e6512672dd620ff716f3b2a788a4", 158351948, 1, "111", 0,
+                    "",
                 )
             )
         }.apply {
-            start(0, 0, this@MainActivity)
+            start(File("$apkPath.download").length(), 158351948, this@MainActivity)
         }
     }
 
@@ -98,7 +101,7 @@ class MainActivity : AppCompatActivity() {
                         add(
                             Item(
                                 "https://clifile.dhgames.cn/ih/${it.md5}",
-                                dirPath + it.path, it.md5, it.size, 0x11, "tag", 1
+                                dirPath + it.path, it.md5, it.size, 0x11, "tag", 1, ""
                             )
                         )
                     }
@@ -132,6 +135,7 @@ class MainActivity : AppCompatActivity() {
                     downloadProgressListener =
                         { totalBytes: Long, finishBytes: Long, speed: Long ->
 //                            appendResult("下载进度，总大小 $totalBytes ，已经完成的大小 $finishBytes , 进度 ${finishBytes / totalBytes.toFloat()} , 当前速度 $speed")
+                            ULog.d("downloadProgressChange $totalBytes, $finishBytes")
                             this@MainActivity.runOnUiThread {
                                 pb_progress.progress =
                                     (finishBytes / totalBytes.toFloat() * 100).toInt()
